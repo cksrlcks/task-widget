@@ -3,7 +3,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { DayPanel } from "./DayPanel"
-import { monthGrid, toYmd } from "./monthGrid"
+import { monthGrid, shiftMonth, toYmd } from "./monthGrid"
 import { useMonthEvents } from "./queries"
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"]
@@ -11,17 +11,16 @@ const DOW = ["일", "월", "화", "수", "목", "금", "토"]
 type Props = { className?: string }
 
 export function CalendarSection({ className }: Props) {
-  const now = new Date()
-  const [cursor, setCursor] = useState({ y: now.getFullYear(), m: now.getMonth() + 1 })
+  const [ym, setYm] = useState(() => toYmd(new Date()).slice(0, 7))
   const [selected, setSelected] = useState<string | null>(null)
-  const ym = `${cursor.y}-${String(cursor.m).padStart(2, "0")}`
+  const y = Number(ym.slice(0, 4))
+  const m = Number(ym.slice(5))
   const { data = [], isLoading, isError } = useMonthEvents(ym)
   const today = toYmd(new Date())
   const withEvents = new Set(data.map((e) => e.date))
 
   const move = (delta: number) => {
-    const d = new Date(cursor.y, cursor.m - 1 + delta, 1)
-    setCursor({ y: d.getFullYear(), m: d.getMonth() + 1 })
+    setYm(shiftMonth(ym, delta))
     setSelected(null)
   }
 
@@ -32,7 +31,7 @@ export function CalendarSection({ className }: Props) {
           <IconChevronLeft />
         </Button>
         <span className="text-sm font-medium">
-          {cursor.y}년 {cursor.m}월
+          {y}년 {m}월
         </span>
         <Button variant="ghost" size="icon-xs" aria-label="다음 달" onClick={() => move(1)}>
           <IconChevronRight />
@@ -44,13 +43,18 @@ export function CalendarSection({ className }: Props) {
             {d}
           </span>
         ))}
-        {monthGrid(cursor.y, cursor.m).map(({ ymd, inMonth }) => (
+        {monthGrid(y, m).map(({ ymd, inMonth }) => (
           <button
             key={ymd}
             type="button"
-            aria-label={ymd}
+            aria-label={`${Number(ymd.slice(0, 4))}년 ${Number(ymd.slice(5, 7))}월 ${Number(ymd.slice(8))}일`}
+            aria-current={ymd === today ? "date" : undefined}
             aria-pressed={selected === ymd}
-            onClick={() => setSelected(selected === ymd ? null : ymd)}
+            onClick={() => {
+              // 다른 달 칸은 그 달로 이동한 뒤 선택 (데이터가 그 달 기준이므로)
+              if (!inMonth) setYm(ymd.slice(0, 7))
+              setSelected(inMonth && selected === ymd ? null : ymd)
+            }}
             className={cn(
               "relative h-7 rounded-md outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40",
               !inMonth && "text-muted-foreground/50",

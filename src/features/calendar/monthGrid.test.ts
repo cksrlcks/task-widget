@@ -1,5 +1,5 @@
 import { expect, test } from "vitest"
-import { monthGrid, sortDayEvents, toYmd } from "./monthGrid"
+import { monthGrid, shiftMonth, sortDayEvents, toYmd } from "./monthGrid"
 import type { CalEvent } from "./type"
 
 test("toYmd uses local date near midnight", () => {
@@ -19,4 +19,14 @@ test("sortDayEvents puts all-day first then time ascending", () => {
   const e = (id: string, time: string): CalEvent => ({ id, title: id, date: "2026-10-31", time, memo: "" })
   const r = sortDayEvents([e("b", "14:00"), e("a", "09:30"), e("d", ""), e("c", "09:30")])
   expect(r.map((x) => x.id)).toEqual(["d", "a", "c", "b"])
+})
+
+test("month starting on sunday has no leading out-of-month cells", () => {
+  const g = monthGrid(2026, 2)
+  expect(g[0]).toEqual({ ymd: "2026-02-01", inMonth: true })
+})
+
+test("shiftMonth rolls over years", () => {
+  expect(shiftMonth("2026-12", 1)).toBe("2027-01")
+  expect(shiftMonth("2026-01", -1)).toBe("2025-12")
 })

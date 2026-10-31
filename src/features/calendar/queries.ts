@@ -26,7 +26,11 @@ function useEventMutation<V>(fn: (v: V) => Promise<unknown>) {
 }
 
 export const useAddEvent = () =>
-  useEventMutation((v: EventInput) => pb.collection("events").create({ ...v, user: pb.authStore.record?.id }))
+  useEventMutation((v: EventInput) => {
+    const user = pb.authStore.record?.id
+    if (!user) throw new Error("로그인이 필요합니다.")
+    return pb.collection("events").create({ ...v, user })
+  })
 
 export const useUpdateEvent = () =>
   useEventMutation(({ id, ...data }: { id: string } & Partial<EventInput>) =>

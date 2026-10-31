@@ -168,7 +168,7 @@ export function DayPanel({ ymd, events, className }: Props) {
           ))}
         </ul>
       )}
-      <EventForm submitLabel="추가" onSubmit={(v) => add.mutateAsync({ ...v, date: ymd })} />
+      <EventForm key={ymd} submitLabel="추가" onSubmit={(v) => add.mutateAsync({ ...v, date: ymd })} />
     </div>
   )
 }
