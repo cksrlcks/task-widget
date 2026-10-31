@@ -13,7 +13,10 @@ import {
 } from "@/features/auth/oauth"
 import { useAuth } from "@/features/auth/useAuth"
 import { pb } from "@/lib/pb"
-import { btnDanger, btnOutline, Pill, Row, Section } from "../settingsUi"
+import { btnDanger, btnOutline } from "../ui/buttonStyles"
+import { Pill } from "../ui/Pill"
+import { Row } from "../ui/Row"
+import { Section } from "../ui/Section"
 
 const PROVIDERS: { id: Provider; label: string }[] = [
   { id: "google", label: "구글" },

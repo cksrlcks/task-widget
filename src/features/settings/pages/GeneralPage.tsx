@@ -3,7 +3,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { isTauri } from "@/features/shell/platform"
 import type { Anchor } from "@/features/widget/windowPos"
 import { setPrefs, useAppPrefs, type Theme } from "../appPrefs"
-import { Row, Section, Segmented } from "../settingsUi"
+import { Row } from "../ui/Row"
+import { Section } from "../ui/Section"
+import { Segmented } from "../ui/Segmented"
 
 const THEMES: { value: Theme; label: string }[] = [
   { value: "system", label: "시스템" },
