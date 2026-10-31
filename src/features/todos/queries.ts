@@ -16,7 +16,7 @@ function useTodoMutation<V>(fn: (v: V) => Promise<unknown>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: todoKeys.all }),
+    onSettled: () => qc.invalidateQueries({ queryKey: todoKeys.all }),
   })
 }
 
@@ -31,4 +31,8 @@ export const useUpdateTodo = () =>
 export const useDeleteTodo = () => useTodoMutation((id: string) => pb.collection("todos").delete(id))
 
 export const useClearDone = () =>
-  useTodoMutation((ids: string[]) => Promise.all(ids.map((id) => pb.collection("todos").delete(id))))
+  useTodoMutation(async (ids: string[]) => {
+    const rs = await Promise.allSettled(ids.map((id) => pb.collection("todos").delete(id)))
+    const n = rs.filter((r) => r.status === "rejected").length
+    if (n) throw new Error(`${n}개를 지우지 못했습니다.`)
+  })

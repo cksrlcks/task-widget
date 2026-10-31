@@ -1,5 +1,5 @@
 import { IconTrash } from "@tabler/icons-react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,14 @@ function TodoRow({ todo }: { todo: Todo }) {
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(todo.title)
 
+  const skipBlur = useRef(false)
+
+  const startEdit = () => {
+    setText(todo.title)
+    skipBlur.current = false
+    setEditing(true)
+  }
+
   const commit = () => {
     setEditing(false)
     const r = titleSchema.safeParse(text)
@@ -32,6 +40,7 @@ function TodoRow({ todo }: { todo: Todo }) {
   return (
     <li className="group flex items-center gap-2 py-1">
       <Checkbox
+        aria-label={`${todo.title} 완료`}
         checked={todo.done}
         onCheckedChange={(v) => update.mutate({ id: todo.id, done: !!v }, { onError: fail })}
       />
@@ -41,10 +50,14 @@ function TodoRow({ todo }: { todo: Todo }) {
           value={text}
           maxLength={500}
           onChange={(e) => setText(e.target.value)}
-          onBlur={commit}
+          onBlur={() => !skipBlur.current && commit()}
           onKeyDown={(e) => {
-            if (e.key === "Enter") commit()
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+              skipBlur.current = true
+              commit()
+            }
             if (e.key === "Escape") {
+              skipBlur.current = true
               setText(todo.title)
               setEditing(false)
             }
@@ -53,7 +66,9 @@ function TodoRow({ todo }: { todo: Todo }) {
         />
       ) : (
         <span
-          onDoubleClick={() => setEditing(true)}
+          tabIndex={0}
+          onDoubleClick={startEdit}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === "F2") && startEdit()}
           className={cn("flex-1 break-all text-sm", todo.done && "text-muted-foreground line-through opacity-60")}
         >
           {todo.title}
@@ -63,7 +78,7 @@ function TodoRow({ todo }: { todo: Todo }) {
         variant="ghost"
         size="icon-xs"
         aria-label="삭제"
-        className="opacity-0 group-hover:opacity-100"
+        className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
         onClick={() => del.mutate(todo.id, { onError: fail })}
       >
         <IconTrash />
@@ -73,12 +88,12 @@ function TodoRow({ todo }: { todo: Todo }) {
 }
 
 export function TodoSection({ className }: Props) {
-  const { data = [] } = useTodos()
+  const { data = [], isLoading, isError } = useTodos()
   const add = useAddTodo()
   const clear = useClearDone()
   const confirm = useConfirm()
   const [draft, setDraft] = useState("")
-  const doneIds = data.filter((t) => t.done).map((t) => t.id)
+  const hasDone = data.some((t) => t.done)
 
   const submit = () => {
     const r = titleSchema.safeParse(draft)
@@ -88,14 +103,16 @@ export function TodoSection({ className }: Props) {
 
   const clearDone = async () => {
     if (!(await confirm("완료 항목을 지울까요?", "완료된 할 일이 모두 삭제됩니다."))) return
-    clear.mutate(doneIds, { onError: fail })
+    clear.mutate(data.filter((t) => t.done).map((t) => t.id), { onError: fail })
   }
 
   return (
     <section className={cn("flex min-h-0 flex-col gap-2 p-3", className)}>
       <ul className="min-h-0 flex-1 overflow-y-auto">
-        {data.length === 0 ? (
-          <li className="py-4 text-center text-sm text-muted-foreground">할 일이 없어요</li>
+        {isLoading || isError || data.length === 0 ? (
+          <li className="py-4 text-center text-sm text-muted-foreground">
+            {isLoading ? "불러오는 중..." : isError ? "할 일을 불러오지 못했습니다." : "할 일이 없어요"}
+          </li>
         ) : (
           data.map((t) => <TodoRow key={t.id} todo={t} />)
         )}
@@ -107,7 +124,7 @@ export function TodoSection({ className }: Props) {
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && submit()}
       />
-      {doneIds.length > 0 && (
+      {hasDone && (
         <Button variant="ghost" size="sm" onClick={clearDone}>
           완료 항목 지우기
         </Button>
