@@ -2,23 +2,15 @@ import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IconLock, IconMail } from "@tabler/icons-react"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { pb } from "@/lib/pb"
 import { authErrorMessage } from "./authErrors"
-import { AuthHeader, BackLink, bigButton, Field, FormError } from "./authUi"
-
-const schema = z
-  .object({
-    email: z.string().email("올바른 이메일을 입력하세요"),
-    password: z.string().min(8, "비밀번호는 8자 이상이어야 합니다"),
-    passwordConfirm: z.string(),
-  })
-  .refine((v) => v.password === v.passwordConfirm, {
-    path: ["passwordConfirm"],
-    message: "비밀번호가 일치하지 않습니다",
-  })
-type FormValues = z.infer<typeof schema>
+import { signupSchema, type SignupValues } from "./schema"
+import { AuthHeader } from "./ui/AuthHeader"
+import { BackLink } from "./ui/BackLink"
+import { Field } from "./ui/Field"
+import { FormError } from "./ui/FormError"
+import { bigButton } from "./ui/styles"
 
 type Props = { onBack: () => void }
 
@@ -29,9 +21,9 @@ export function SignupForm({ onBack }: Props) {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+  } = useForm<SignupValues>({ resolver: zodResolver(signupSchema) })
 
-  const onSubmit = async (v: FormValues) => {
+  const onSubmit = async (v: SignupValues) => {
     try {
       await pb.collection("users").create({ ...v, hasPassword: true })
     } catch (err) {

@@ -1,64 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { LoginScreen } from "@/features/auth/LoginScreen"
-import { runBoot, useAuth } from "@/features/auth/useAuth"
+import { AuthGate } from "@/features/auth/AuthGate"
+import { useAuth } from "@/features/auth/useAuth"
 import { SettingsView } from "@/features/settings/SettingsView"
 import { isTauri } from "@/features/shell/platform"
+import { startDrag } from "@/features/shell/startDrag"
+import { useTraySettings } from "@/features/shell/useTraySettings"
 import { useUpdateCheck } from "@/features/update/useUpdateCheck"
 import { TopBar } from "@/features/widget/TopBar"
 import { useFitWindowHeight } from "@/features/widget/useFitWindowHeight"
-import { Widget } from "@/features/widget/Widget"
-import { WidgetCard } from "@/features/widget/WidgetCard"
 import { cn } from "@/lib/utils"
-
-function Body() {
-  const { status } = useAuth()
-  if (status === "loading")
-    return (
-      <WidgetCard className="items-center p-6">
-        <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-      </WidgetCard>
-    )
-  if (status === "offline")
-    return (
-      <WidgetCard className="items-center gap-3 p-6 text-sm">
-        <p>서버에 연결할 수 없습니다.</p>
-        <Button onClick={runBoot}>다시 시도</Button>
-      </WidgetCard>
-    )
-  if (status !== "authed")
-    return (
-      <WidgetCard className="min-h-0 overflow-y-auto">
-        <LoginScreen />
-      </WidgetCard>
-    )
-  return <Widget />
-}
-
-// 누르면 동작하는 것들. 이 밖의 빈 곳(카드 여백·제목·시간 표시·카드 사이 틈)은 끌어서 창을 옮긴다
-const INTERACTIVE =
-  "button, input, textarea, select, a, label, [role=checkbox], [data-no-drag]"
-
-const startDrag = (e: React.MouseEvent) => {
-  const t = e.target as HTMLElement
-  // 대화상자는 포털로 그려져 DOM상 바깥이지만 React 이벤트는 여기까지 올라온다
-  if (e.button !== 0 || !isTauri() || !e.currentTarget.contains(t)) return
-  if (t.closest(INTERACTIVE)) return
-  void import("@tauri-apps/api/window").then(({ getCurrentWindow }) =>
-    getCurrentWindow().startDragging(),
-  )
-}
-
-/** 트레이 메뉴의 "설정"이 위젯에 보내는 이벤트 */
-function useTraySettings(open: () => void) {
-  useEffect(() => {
-    if (!isTauri()) return
-    const off = import("@tauri-apps/api/event").then(({ listen }) =>
-      listen("open-settings", open),
-    )
-    return () => void off.then((f) => f())
-  }, [open])
-}
 
 const web = !isTauri()
 
@@ -110,7 +60,7 @@ export default function App() {
         />
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           <div ref={contentRef} className="flex flex-col gap-2">
-            {settings ? <SettingsView /> : <Body />}
+            {settings ? <SettingsView /> : <AuthGate />}
           </div>
         </div>
       </div>

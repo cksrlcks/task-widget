@@ -1,9 +1,4 @@
-import {
-  useState,
-  type KeyboardEvent,
-  type PointerEvent,
-  type ReactNode,
-} from "react"
+import { useState, type ReactNode } from "react"
 import { CalendarSection } from "@/features/calendar/CalendarSection"
 import { PomodoroSection } from "@/features/pomodoro/PomodoroSection"
 import {
@@ -12,56 +7,12 @@ import {
   type SectionId,
 } from "@/features/settings/appPrefs"
 import { TodoSection } from "@/features/todos/TodoSection"
+import { SectionDivider } from "./SectionDivider"
 import { WidgetCard } from "./WidgetCard"
 
 const MIN = 48
 /** 높이를 정하지 않았을 때. 할 일은 목록이 길어져도 이 높이 안에서 스크롤한다 */
 const DEFAULT_HEIGHT: Partial<Record<SectionId, number>> = { todos: 260 }
-
-/** 섹션 아래 경계. 끌거나 화살표 키로 바로 위 섹션의 높이만 바꾸고, 두 번 누르면 원래 크기로 */
-function Divider({
-  onResize,
-  onReset,
-}: {
-  onResize: (dy: number, done: boolean) => void
-  onReset: () => void
-}) {
-  const down = (e: PointerEvent) => {
-    if (e.button !== 0) return
-    e.preventDefault()
-    const y0 = e.clientY
-    const move = (ev: globalThis.PointerEvent) =>
-      onResize(ev.clientY - y0, false)
-    const up = (ev: globalThis.PointerEvent) => {
-      window.removeEventListener("pointermove", move)
-      window.removeEventListener("pointerup", up)
-      onResize(ev.clientY - y0, true)
-    }
-    window.addEventListener("pointermove", move)
-    window.addEventListener("pointerup", up)
-  }
-  const key = (e: KeyboardEvent) => {
-    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-      e.preventDefault()
-      onResize(e.key === "ArrowUp" ? -16 : 16, true)
-    }
-  }
-  return (
-    <div
-      role="separator"
-      aria-orientation="horizontal"
-      aria-label="섹션 높이 조절"
-      tabIndex={0}
-      data-no-drag
-      onPointerDown={down}
-      onKeyDown={key}
-      onDoubleClick={onReset}
-      className="group/div relative -my-2 flex h-2 shrink-0 cursor-row-resize touch-none items-center justify-center outline-none"
-    >
-      <span className="h-1 w-8 rounded-full bg-foreground/0 transition-colors group-hover/div:bg-foreground/25 group-focus-visible/div:bg-primary" />
-    </div>
-  )
-}
 
 /**
  * 섹션을 정한 순서로 쌓는다. 각 섹션은 자기 높이만 갖고(경계를 끌어 바꿈) 서로 영향을 주지 않는다.
@@ -152,7 +103,7 @@ export function Widget() {
               : "",
         )}
       </div>,
-      fixed(id) && <Divider key={`d-${id}`} {...resizer(id)} />,
+      fixed(id) && <SectionDivider key={`d-${id}`} {...resizer(id)} />,
     )
   }
   return <>{out}</>

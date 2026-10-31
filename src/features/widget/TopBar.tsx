@@ -6,12 +6,12 @@ import {
   IconPinFilled,
   IconSettings,
 } from "@tabler/icons-react"
-import { toast } from "sonner"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { useDesktopDownload } from "@/features/download/useDesktopDownload"
 import { setPrefs, useAppPrefs } from "@/features/settings/appPrefs"
 import { isTauri } from "@/features/shell/platform"
 import { cn } from "@/lib/utils"
+import { hideWindow } from "./hideWindow"
 
 type Props = {
   settings: boolean
@@ -20,16 +20,6 @@ type Props = {
   /** 새 버전이 있으면 그 버전과 설치 함수 */
   update?: { version: string; installing: boolean; install: () => void }
   className?: string
-}
-
-const fail = (err: unknown) =>
-  toast.error(err instanceof Error ? err.message : "창을 다루지 못했습니다.")
-
-const hide = () => {
-  if (!isTauri()) return
-  void import("@tauri-apps/api/window")
-    .then(({ getCurrentWindow }) => getCurrentWindow().hide())
-    .catch(fail)
 }
 
 /**
@@ -129,7 +119,7 @@ export function TopBar({
           size="icon-xs"
           aria-label="숨기기"
           title="숨기기"
-          onClick={hide}
+          onClick={hideWindow}
         >
           <IconEyeOff />
         </Button>

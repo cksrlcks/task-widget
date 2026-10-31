@@ -2,16 +2,15 @@ import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IconMail } from "@tabler/icons-react"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { pb } from "@/lib/pb"
 import { authErrorMessage } from "./authErrors"
-import { AuthHeader, BackLink, bigButton, Field, FormError } from "./authUi"
-
-const schema = z.object({
-  email: z.string().email("올바른 이메일을 입력하세요"),
-})
-type FormValues = z.infer<typeof schema>
+import { resetSchema, type ResetValues } from "./schema"
+import { AuthHeader } from "./ui/AuthHeader"
+import { BackLink } from "./ui/BackLink"
+import { Field } from "./ui/Field"
+import { FormError } from "./ui/FormError"
+import { bigButton } from "./ui/styles"
 
 type Props = { onBack: () => void }
 
@@ -22,9 +21,9 @@ export function ResetForm({ onBack }: Props) {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+  } = useForm<ResetValues>({ resolver: zodResolver(resetSchema) })
 
-  const onSubmit = async (v: FormValues) => {
+  const onSubmit = async (v: ResetValues) => {
     try {
       await pb.collection("users").requestPasswordReset(v.email)
       setSent(true)

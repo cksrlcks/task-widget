@@ -2,19 +2,10 @@ import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IconLock, IconMail } from "@tabler/icons-react"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { useDesktopDownload } from "@/features/download/useDesktopDownload"
 import { pb } from "@/lib/pb"
 import { authErrorMessage } from "./authErrors"
-import {
-  AuthHeader,
-  bigButton,
-  Field,
-  FormError,
-  OrDivider,
-  SocialButton,
-} from "./authUi"
 import {
   cancelOAuth,
   isOAuthCancelled,
@@ -22,13 +13,14 @@ import {
   type Provider,
 } from "./oauth"
 import { ResetForm } from "./ResetForm"
+import { loginSchema, type LoginValues } from "./schema"
 import { SignupForm } from "./SignupForm"
-
-const schema = z.object({
-  email: z.string().email("올바른 이메일을 입력하세요"),
-  password: z.string().min(8, "비밀번호는 8자 이상이어야 합니다"),
-})
-type FormValues = z.infer<typeof schema>
+import { AuthHeader } from "./ui/AuthHeader"
+import { Field } from "./ui/Field"
+import { FormError } from "./ui/FormError"
+import { OrDivider } from "./ui/OrDivider"
+import { SocialButton } from "./ui/SocialButton"
+import { bigButton } from "./ui/styles"
 
 export function LoginScreen() {
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login")
@@ -39,9 +31,9 @@ export function LoginScreen() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+  } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) })
 
-  const onSubmit = async (v: FormValues) => {
+  const onSubmit = async (v: LoginValues) => {
     try {
       await pb.collection("users").authWithPassword(v.email, v.password)
     } catch (err) {

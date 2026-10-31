@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useDragReorder } from "@/hooks/use-drag-reorder"
 import { cn } from "@/lib/utils"
 import { setPrefs, useAppPrefs, type SectionId } from "../appPrefs"
-import { Section } from "../settingsUi"
+import { Section } from "../ui/Section"
 
 const ITEMS: Record<
   SectionId,
