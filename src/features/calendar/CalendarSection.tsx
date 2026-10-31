@@ -6,6 +6,7 @@ import {
   IconChevronUp,
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
+import { setPrefs, useAppPrefs } from "@/features/settings/appPrefs"
 import { WidgetCard } from "@/features/widget/WidgetCard"
 import { cn } from "@/lib/utils"
 import { dayLabel, DayPanel } from "./DayPanel"
@@ -35,7 +36,8 @@ export function CalendarSection({ className }: Props) {
   const [ym, setYm] = useState(() => toYmd(new Date()).slice(0, 7))
   const [selected, setSelected] = useState<string | null>(null)
   // 기본은 오늘 일정만. 달력 보기를 누르면 월간 달력이 펼쳐진다
-  const [expanded, setExpanded] = useState(false)
+  const { calendarExpanded: expanded } = useAppPrefs()
+  const setExpanded = (v: boolean) => setPrefs({ calendarExpanded: v })
   const cardRef = useRef<HTMLElement>(null)
   const y = Number(ym.slice(0, 4))
   const m = Number(ym.slice(5))

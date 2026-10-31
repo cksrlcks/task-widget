@@ -15,8 +15,10 @@ import { TodoSection } from "@/features/todos/TodoSection"
 import { WidgetCard } from "./WidgetCard"
 
 const MIN = 48
+/** 높이를 정하지 않았을 때. 할 일은 목록이 길어져도 이 높이 안에서 스크롤한다 */
+const DEFAULT_HEIGHT: Partial<Record<SectionId, number>> = { todos: 260 }
 
-/** 섹션 사이 경계. 끌거나 화살표 키로 높이를 바꾸고, 두 번 누르면 원래 크기로 */
+/** 섹션 아래 경계. 끌거나 화살표 키로 바로 위 섹션의 높이만 바꾸고, 두 번 누르면 원래 크기로 */
 function Divider({
   onResize,
   onReset,
@@ -61,9 +63,19 @@ function Divider({
   )
 }
 
+/**
+ * 섹션을 정한 순서로 쌓는다. 각 섹션은 자기 높이만 갖고(경계를 끌어 바꿈) 서로 영향을 주지 않는다.
+ * 데스크톱 창 높이는 App이 내용 높이에 맞춘다
+ */
 export function Widget() {
-  const { showPomodoro, showTodos, showCalendar, sectionHeights } =
-    useAppPrefs()
+  const {
+    showPomodoro,
+    showTodos,
+    showCalendar,
+    sectionHeights,
+    sectionOrder,
+    calendarExpanded,
+  } = useAppPrefs()
   // 끄는 동안은 화면에만 반영하고 놓을 때 저장한다
   const [live, setLive] = useState<{ id: SectionId; h: number } | null>(null)
 
@@ -81,7 +93,9 @@ export function Widget() {
         (c: string) => <CalendarSection className={c} />,
       ],
     ] as const
-  ).filter(([, show]) => show)
+  )
+    .filter(([, show]) => show)
+    .sort(([a], [b]) => sectionOrder.indexOf(a) - sectionOrder.indexOf(b))
 
   if (!items.length)
     return (
@@ -90,25 +104,23 @@ export function Widget() {
       </WidgetCard>
     )
 
-  // 남는 공간을 채우는 섹션: 할 일, 없으면 마지막
-  const filler =
-    items.find(([id]) => id === "todos")?.[0] ?? items[items.length - 1][0]
+  // 접힌 캘린더(오늘 일정)는 늘 내용 높이. 정한 높이는 펼친 달력에만 쓴다
+  const fixed = (id: SectionId) => id !== "calendar" || calendarExpanded
   const heightOf = (id: SectionId) =>
-    live?.id === id ? live.h : sectionHeights[id]
+    !fixed(id)
+      ? undefined
+      : live?.id === id
+        ? live.h
+        : (sectionHeights[id] ?? DEFAULT_HEIGHT[id])
 
-  // 경계 위아래 중 채우는 섹션이 아닌 쪽의 높이를 바꾼다
-  const between = (upper: SectionId, lower: SectionId) =>
-    upper === filler ? resizer(lower, -1) : resizer(upper, 1)
-
-  /** id 섹션의 높이를 끈 거리만큼(sign: 아래로 끌면 +1 커짐, -1 작아짐) 바꾼다 */
-  const resizer = (id: SectionId, sign: 1 | -1) => {
+  const resizer = (id: SectionId) => {
     let start: number | null = null
     return {
       onResize: (dy: number, done: boolean) => {
         start ??=
           document.querySelector<HTMLElement>(`[data-section="${id}"]`)
             ?.offsetHeight ?? MIN
-        const h = Math.max(MIN, Math.round(start + sign * dy))
+        const h = Math.max(MIN, Math.round(start + dy))
         if (!done) return setLive({ id, h })
         setLive(null)
         start = null
@@ -122,34 +134,26 @@ export function Widget() {
   }
 
   const out: ReactNode[] = []
-  items.forEach(([id, , render], i) => {
-    if (i > 0)
-      out.push(<Divider key={`d-${id}`} {...between(items[i - 1][0], id)} />)
-    const h = id === filler ? undefined : heightOf(id)
+  for (const [id, , render] of items) {
+    const h = heightOf(id)
     out.push(
       <div
         key={id}
         data-section={id}
-        className={
-          id === filler
-            ? "flex min-h-24 flex-1 flex-col"
-            : "flex shrink-0 flex-col"
-        }
+        className="flex shrink-0 flex-col"
         style={h ? { height: h } : undefined}
       >
         {/* 할 일은 목록만 스크롤하고, 높이를 줄인 다른 카드는 카드째 스크롤한다 */}
         {render(
           id === "todos"
             ? "min-h-0 flex-1"
-            : h || id === filler
+            : h
               ? "min-h-0 flex-1 overflow-y-auto"
               : "",
         )}
       </div>,
+      fixed(id) && <Divider key={`d-${id}`} {...resizer(id)} />,
     )
-  })
-  // 마지막 섹션은 아래 가장자리로도 줄이고 늘린다
-  const last = items[items.length - 1][0]
-  if (last !== filler) out.push(<Divider key="d-end" {...resizer(last, 1)} />)
+  }
   return <>{out}</>
 }

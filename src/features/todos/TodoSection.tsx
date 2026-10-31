@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { WidgetCard } from "@/features/widget/WidgetCard"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useDragReorder } from "@/hooks/use-drag-reorder"
 import { cn } from "@/lib/utils"
 import {
   useAddTodo,
@@ -70,25 +71,15 @@ function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
     <li
       data-no-drag
       data-undone={todo.done ? undefined : ""}
+      data-reorder={todo.done ? undefined : ""}
       style={style}
       className={cn(
-        "group relative flex min-h-9 items-center gap-2 rounded-md pr-1 pl-0.5 hover:bg-muted/70",
+        "group relative flex min-h-9 items-center gap-2 rounded-md pr-1 pl-2 hover:bg-muted/70",
         dragging
           ? "z-10 bg-card shadow-md"
           : "transition-transform duration-150",
       )}
     >
-      <span
-        aria-hidden
-        onPointerDown={onGrab}
-        className={cn(
-          "flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground/60 opacity-0 group-hover:opacity-100 active:cursor-grabbing",
-          !onGrab && "invisible",
-          dragging && "opacity-100",
-        )}
-      >
-        <IconGripVertical className="size-3.5" />
-      </span>
       <Checkbox
         aria-label={`${todo.title} 완료`}
         checked={todo.done}
@@ -131,6 +122,17 @@ function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
           {todo.title}
         </span>
       )}
+      <span
+        aria-hidden
+        onPointerDown={onGrab}
+        className={cn(
+          "flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground/60 opacity-0 group-hover:opacity-100 active:cursor-grabbing",
+          !onGrab && "invisible",
+          dragging && "opacity-100",
+        )}
+      >
+        <IconGripVertical className="size-3.5" />
+      </span>
       <Button
         variant="ghost"
         size="icon-xs"
@@ -154,53 +156,12 @@ export function TodoSection({ className }: Props) {
   const hasDone = data.some((t) => t.done)
   const undone = data.filter((t) => !t.done)
   const move = useReorderTodos()
-  const listRef = useRef<HTMLUListElement>(null)
-  // 끄는 중: 몇 번째를 어디로, 얼마나 내렸는지
-  const [drag, setDrag] = useState<{
-    from: number
-    to: number
-    dy: number
-    h: number
-  } | null>(null)
-
-  const grab = (from: number) => (e: ReactPointerEvent) => {
-    if (e.button !== 0) return
-    e.preventDefault()
-    const rows = [
-      ...(listRef.current?.querySelectorAll<HTMLElement>("[data-undone]") ??
-        []),
-    ]
-    const mids = rows.map((r) => {
-      const b = r.getBoundingClientRect()
-      return b.top + b.height / 2
-    })
-    const h = rows[from].getBoundingClientRect().height
-    const startY = e.clientY
-    let to = from
-    setDrag({ from, to, dy: 0, h })
-    const onMove = (ev: PointerEvent) => {
-      to = mids.filter((m, i) => i !== from && m < ev.clientY).length
-      setDrag({ from, to, dy: ev.clientY - startY, h })
-    }
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove)
-      window.removeEventListener("pointerup", onUp)
-      setDrag(null)
+  const { listRef, grab, shift, dragging } = useDragReorder<HTMLUListElement>(
+    (from, to) => {
       const ups = reorder(undone, from, to)
       if (ups.length) move.mutate(ups, { onError: fail })
-    }
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
-  }
-
-  // 끄는 행은 포인터를 따라가고, 그 사이 행들은 한 칸씩 비켜 준다
-  const shift = (i: number): CSSProperties | undefined => {
-    if (!drag) return
-    const { from, to, dy, h } = drag
-    if (i === from) return { transform: `translateY(${dy}px)` }
-    if (from < i && i <= to) return { transform: `translateY(${-h}px)` }
-    if (to <= i && i < from) return { transform: `translateY(${h}px)` }
-  }
+    },
+  )
 
   const submit = () => {
     const r = titleSchema.safeParse(draft)
@@ -242,24 +203,7 @@ export function TodoSection({ className }: Props) {
         )
       }
     >
-      <div className="relative px-2">
-        <IconPlus
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 left-4.5 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
-          aria-label="할 일 추가"
-          value={draft}
-          maxLength={500}
-          placeholder="할 일 추가"
-          className="h-10 pl-8 text-sm"
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) =>
-            e.key === "Enter" && !e.nativeEvent.isComposing && submit()
-          }
-        />
-      </div>
-      <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-1 py-1.5">
+      <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-1 pb-1.5">
         {isLoading || isError || data.length === 0 ? (
           <li className="py-4 text-center text-sm text-muted-foreground">
             {isLoading
@@ -277,13 +221,30 @@ export function TodoSection({ className }: Props) {
                 key={t.id}
                 todo={t}
                 onGrab={grab(i)}
-                dragging={drag?.from === i}
+                dragging={dragging === i}
                 style={shift(i)}
               />
             ),
           )
         )}
       </ul>
+      <div className="relative mx-2 mb-2">
+        <IconPlus
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          aria-label="할 일 추가"
+          value={draft}
+          maxLength={500}
+          placeholder="할 일 추가"
+          className="h-10 pl-8 text-sm"
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) =>
+            e.key === "Enter" && !e.nativeEvent.isComposing && submit()
+          }
+        />
+      </div>
     </WidgetCard>
   )
 }

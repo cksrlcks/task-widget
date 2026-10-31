@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { LoginScreen } from "@/features/auth/LoginScreen"
 import { runBoot, useAuth } from "@/features/auth/useAuth"
@@ -6,6 +6,7 @@ import { SettingsView } from "@/features/settings/SettingsView"
 import { isTauri } from "@/features/shell/platform"
 import { useUpdateCheck } from "@/features/update/useUpdateCheck"
 import { TopBar } from "@/features/widget/TopBar"
+import { useFitWindowHeight } from "@/features/widget/useFitWindowHeight"
 import { Widget } from "@/features/widget/Widget"
 import { WidgetCard } from "@/features/widget/WidgetCard"
 import { cn } from "@/lib/utils"
@@ -67,6 +68,10 @@ export default function App() {
   const [settings, setSettings] = useState(false)
   const { user } = useAuth()
   useTraySettings(useCallback(() => setSettings(true), []))
+  const contentRef = useRef<HTMLDivElement>(null)
+  // 헤더(h-9 = 36px) + 아래 여백(pb-2 = 8px)
+  // 설정 화면은 창 크기를 그대로 두고 안에서 스크롤한다
+  useFitWindowHeight(contentRef, 44, !settings)
   // 로그아웃하면 위젯(로그인) 화면으로
   useEffect(() => {
     if (!user) setSettings(false)
@@ -103,8 +108,10 @@ export default function App() {
               : undefined
           }
         />
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
-          {settings ? <SettingsView /> : <Body />}
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+          <div ref={contentRef} className="flex flex-col gap-2">
+            {settings ? <SettingsView /> : <Body />}
+          </div>
         </div>
       </div>
     </div>

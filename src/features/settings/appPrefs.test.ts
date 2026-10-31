@@ -2,9 +2,18 @@ import { describe, expect, test } from "vitest"
 import { DEFAULTS, loadPrefs } from "./appPrefs"
 
 describe("loadPrefs", () => {
+  test("section order: dedupes, drops unknown, appends missing", () => {
+    expect(
+      loadPrefs('{"sectionOrder":["calendar","x","calendar","todos"]}')
+        .sectionOrder,
+    ).toEqual(["calendar", "todos", "pomodoro"])
+  })
+
   test("section heights: keeps known numeric keys, clamps, drops junk", () => {
     expect(
-      loadPrefs('{"sectionHeights":{"todos":10,"calendar":300,"x":5,"pomodoro":"a"}}').sectionHeights,
+      loadPrefs(
+        '{"sectionHeights":{"todos":10,"calendar":300,"x":5,"pomodoro":"a"}}',
+      ).sectionHeights,
     ).toEqual({ todos: 48, calendar: 300 })
   })
 
@@ -24,6 +33,8 @@ describe("loadPrefs", () => {
       longBreakEvery: 4,
       sound: true,
       sectionHeights: {},
+      sectionOrder: ["pomodoro", "todos", "calendar"],
+      calendarExpanded: false,
     })
   })
   test("partial saved prefs merge over defaults", () => {

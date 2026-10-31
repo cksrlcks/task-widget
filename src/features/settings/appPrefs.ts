@@ -24,6 +24,10 @@ export type AppPrefs = {
   sound: boolean
   /** 사용자가 경계를 끌어 정한 섹션 높이(px). 없으면 내용 크기 */
   sectionHeights: Partial<Record<SectionId, number>>
+  /** 위젯에 쌓이는 섹션 순서(위에서 아래) */
+  sectionOrder: SectionId[]
+  /** 캘린더를 월간 달력으로 펼쳤는지. 접혀 있으면 오늘 일정만 내용 높이로 */
+  calendarExpanded: boolean
 }
 
 const KEY = "taskwidget.prefs"
@@ -42,6 +46,8 @@ export const DEFAULTS: AppPrefs = {
   longBreakEvery: 4,
   sound: true,
   sectionHeights: {},
+  sectionOrder: ["pomodoro", "todos", "calendar"],
+  calendarExpanded: false,
 }
 const THEMES: Theme[] = ["system", "light", "dark"]
 const ZOOMS = [0.9, 1, 1.1, 1.25]
@@ -55,10 +61,21 @@ const oneOf = <T>(v: unknown, opts: T[], def: T) =>
   opts.includes(v as T) ? (v as T) : def
 const bool = (v: unknown, def: boolean) => (typeof v === "boolean" ? v : def)
 const SECTIONS: SectionId[] = ["pomodoro", "todos", "calendar"]
+// 아는 이름만 한 번씩, 빠진 섹션은 기본 순서대로 뒤에 붙인다
+const order = (v: unknown): SectionId[] => {
+  const known = Array.isArray(v)
+    ? v.filter(
+        (x, i): x is SectionId => SECTIONS.includes(x) && v.indexOf(x) === i,
+      )
+    : []
+  return [...known, ...SECTIONS.filter((x) => !known.includes(x))]
+}
 const heights = (v: unknown): AppPrefs["sectionHeights"] => {
   const o = v && typeof v === "object" ? (v as Record<string, unknown>) : {}
   return Object.fromEntries(
-    SECTIONS.flatMap((k) => (typeof o[k] === "number" ? [[k, num(o[k], 48, 2000, 0)]] : [])),
+    SECTIONS.flatMap((k) =>
+      typeof o[k] === "number" ? [[k, num(o[k], 48, 2000, 0)]] : [],
+    ),
   )
 }
 
@@ -88,6 +105,8 @@ export function loadPrefs(raw: string | null): AppPrefs {
     longBreakEvery: num(s.longBreakEvery, 1, 10, d.longBreakEvery),
     sound: bool(s.sound, d.sound),
     sectionHeights: heights(s.sectionHeights),
+    sectionOrder: order(s.sectionOrder),
+    calendarExpanded: bool(s.calendarExpanded, d.calendarExpanded),
   }
 }
 
