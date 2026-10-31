@@ -17,6 +17,9 @@ export function assertEmail(meta: { email?: string } | undefined): void {
   if (!meta?.email) throw new AuthNotice("카카오(또는 구글)에서 이메일 제공에 동의해 주세요.")
 }
 
+// 카카오 기본 scope는 닉네임·프로필 사진까지 요청해 동의항목을 안 켜면 KOE205가 난다. 앱은 이메일만 쓴다
+const SCOPES: Partial<Record<Provider, string[]>> = { kakao: ["account_email"] }
+
 const KEY = "oauth2" // 로그인/연결은 동시에 하나만 진행된다
 const TIMEOUT_MS = 3 * 60 * 1000
 
@@ -32,7 +35,12 @@ async function oauth(c: Client, provider: Provider) {
   try {
     return await c
       .collection("users")
-      .authWithOAuth2({ provider, urlCallback: openExternal, requestKey: KEY })
+      .authWithOAuth2({
+        provider,
+        scopes: SCOPES[provider],
+        urlCallback: openExternal,
+        requestKey: KEY,
+      })
   } finally {
     clearTimeout(timer)
   }
