@@ -97,9 +97,11 @@ export function Widget() {
     live?.id === id ? live.h : sectionHeights[id]
 
   // 경계 위아래 중 채우는 섹션이 아닌 쪽의 높이를 바꾼다
-  const resizer = (upper: SectionId, lower: SectionId) => {
-    const id = upper === filler ? lower : upper
-    const sign = upper === filler ? -1 : 1
+  const between = (upper: SectionId, lower: SectionId) =>
+    upper === filler ? resizer(lower, -1) : resizer(upper, 1)
+
+  /** id 섹션의 높이를 끈 거리만큼(sign: 아래로 끌면 +1 커짐, -1 작아짐) 바꾼다 */
+  const resizer = (id: SectionId, sign: 1 | -1) => {
     let start: number | null = null
     return {
       onResize: (dy: number, done: boolean) => {
@@ -122,7 +124,7 @@ export function Widget() {
   const out: ReactNode[] = []
   items.forEach(([id, , render], i) => {
     if (i > 0)
-      out.push(<Divider key={`d-${id}`} {...resizer(items[i - 1][0], id)} />)
+      out.push(<Divider key={`d-${id}`} {...between(items[i - 1][0], id)} />)
     const h = id === filler ? undefined : heightOf(id)
     out.push(
       <div
@@ -146,5 +148,8 @@ export function Widget() {
       </div>,
     )
   })
+  // 마지막 섹션은 아래 가장자리로도 줄이고 늘린다
+  const last = items[items.length - 1][0]
+  if (last !== filler) out.push(<Divider key="d-end" {...resizer(last, 1)} />)
   return <>{out}</>
 }

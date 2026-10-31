@@ -63,7 +63,7 @@ const web = !isTauri()
 
 /** 투명 창. 카드만 떠 있고, 마우스를 올리면 카드 뒤로 이어진 배경이 나타난다. 웹은 가운데 한 열로 늘 배경을 보인다 */
 export default function App() {
-  useUpdateCheck()
+  const { update, installing, install } = useUpdateCheck()
   const [settings, setSettings] = useState(false)
   const { user } = useAuth()
   useTraySettings(useCallback(() => setSettings(true), []))
@@ -83,16 +83,29 @@ export default function App() {
         aria-hidden
         className={cn(
           "pointer-events-none absolute inset-0 rounded-xl border border-black/[.06] bg-[#eeeeee]/95 opacity-0 transition-opacity duration-150 group-hover/widget:opacity-100 dark:border-white/[.08] dark:bg-[#1c1c1c]/95",
+          // 설정 화면은 투명해지지 않는다
+          settings && "opacity-100",
           web && "rounded-none border-y-0 opacity-100",
         )}
       />
-      {!settings && <TopBar onSettings={() => setSettings(true)} />}
-      <div className="relative flex h-full flex-col gap-2 overflow-y-auto p-2 [&>:first-child_[data-slot=card-header]]:pr-16">
-        {settings ? (
-          <SettingsView onBack={() => setSettings(false)} />
-        ) : (
-          <Body />
-        )}
+      <div className="relative flex h-full flex-col">
+        <TopBar
+          settings={settings}
+          onSettings={() => setSettings(true)}
+          onBack={() => setSettings(false)}
+          update={
+            update
+              ? {
+                  version: update.version,
+                  installing,
+                  install: () => void install(),
+                }
+              : undefined
+          }
+        />
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
+          {settings ? <SettingsView /> : <Body />}
+        </div>
       </div>
     </div>
   )

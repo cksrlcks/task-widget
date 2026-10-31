@@ -242,7 +242,16 @@ export function DayPanel({
           {addButton}
         </div>
       )}
-      {day.length === 0 ? (
+      {day.length === 0 && hideLabel ? (
+        // 오늘 보기: 빈 상태와 추가 버튼을 한 줄에 두어 카드를 낮게
+        <div className="flex items-center justify-between pl-2">
+          <p className="text-xs text-muted-foreground">오늘 일정이 없어요</p>
+          <Button size="xs" variant="ghost" onClick={() => setEditing(null)}>
+            <IconPlus />
+            추가
+          </Button>
+        </div>
+      ) : day.length === 0 ? (
         <p className="py-2 text-center text-xs text-muted-foreground">
           일정이 없어요
         </p>
@@ -253,7 +262,7 @@ export function DayPanel({
           ))}
         </ul>
       )}
-      {hideLabel && (
+      {hideLabel && day.length > 0 && (
         <Button
           size="sm"
           variant="ghost"
