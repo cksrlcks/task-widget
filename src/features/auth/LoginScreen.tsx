@@ -1,12 +1,25 @@
 import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { IconLock, IconMail } from "@tabler/icons-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { pb } from "@/lib/pb"
 import { authErrorMessage } from "./authErrors"
-import { cancelOAuth, isOAuthCancelled, signInWithProvider, type Provider } from "./oauth"
+import {
+  AuthHeader,
+  bigButton,
+  Field,
+  FormError,
+  OrDivider,
+  SocialButton,
+} from "./authUi"
+import {
+  cancelOAuth,
+  isOAuthCancelled,
+  signInWithProvider,
+  type Provider,
+} from "./oauth"
 import { ResetForm } from "./ResetForm"
 import { SignupForm } from "./SignupForm"
 
@@ -18,7 +31,8 @@ type FormValues = z.infer<typeof schema>
 
 export function LoginScreen() {
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login")
-  const [oauthBusy, setOauthBusy] = useState(false)
+  // 진행 중인 소셜 로그인
+  const [oauth, setOauth] = useState<Provider | null>(null)
   const {
     register,
     handleSubmit,
@@ -35,68 +49,94 @@ export function LoginScreen() {
   }
 
   const social = async (p: Provider) => {
-    setOauthBusy(true)
+    setOauth(p)
     try {
       await signInWithProvider(p)
     } catch (err) {
-      if (!isOAuthCancelled(err)) setError("root", { message: authErrorMessage(err, "oauth") })
+      if (!isOAuthCancelled(err))
+        setError("root", { message: authErrorMessage(err, "oauth") })
     } finally {
-      setOauthBusy(false)
+      setOauth(null)
     }
   }
 
   const back = () => setMode("login")
+  if (mode === "signup") return <SignupForm onBack={back} />
+  if (mode === "reset") return <ResetForm onBack={back} />
+
   return (
-    <div className="mx-auto flex w-full max-w-xs flex-col gap-3 p-4">
-      <h1 className="text-lg font-semibold">Task Widget</h1>
-      {mode === "signup" ? (
-        <SignupForm onBack={back} />
-      ) : mode === "reset" ? (
-        <ResetForm onBack={back} />
-      ) : (
-        <>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
-            <label htmlFor="login-email" className="sr-only">
-              이메일
-            </label>
-            <Input id="login-email" type="email" placeholder="이메일" {...register("email")} />
-            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            <label htmlFor="login-password" className="sr-only">
-              비밀번호
-            </label>
-            <Input
-              id="login-password"
-              type="password"
-              placeholder="비밀번호"
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="text-xs text-destructive">{errors.password.message}</p>
-            )}
-            {errors.root && <p className="text-xs text-destructive">{errors.root.message}</p>}
-            <Button type="submit" disabled={isSubmitting}>로그인</Button>
-          </form>
-          <Button variant="outline" disabled={oauthBusy} onClick={() => social("google")}>
-            구글로 계속하기
-          </Button>
-          <Button variant="outline" disabled={oauthBusy} onClick={() => social("kakao")}>
-            카카오로 계속하기
-          </Button>
-          {oauthBusy && (
-            <Button variant="ghost" onClick={() => cancelOAuth()}>
-              취소
-            </Button>
-          )}
-          <div className="flex justify-between text-xs">
-            <button type="button" className="underline" onClick={() => setMode("signup")}>
-              회원가입
-            </button>
-            <button type="button" className="underline" onClick={() => setMode("reset")}>
-              비밀번호 찾기
-            </button>
-          </div>
-        </>
-      )}
+    <div className="mx-auto flex w-full max-w-xs flex-col gap-3.5 px-4 pt-3 pb-4">
+      <AuthHeader title="Task Widget" desc="할 일, 일정, 뽀모도로를 한곳에서" />
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-2"
+        noValidate
+      >
+        <Field
+          label="이메일"
+          type="email"
+          autoComplete="email"
+          icon={<IconMail />}
+          error={errors.email?.message}
+          {...register("email")}
+        />
+        <Field
+          label="비밀번호"
+          type="password"
+          autoComplete="current-password"
+          icon={<IconLock />}
+          error={errors.password?.message}
+          {...register("password")}
+        />
+        <div className="-mt-1 flex justify-end">
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            onClick={() => setMode("reset")}
+          >
+            비밀번호를 잊으셨나요?
+          </button>
+        </div>
+        <FormError>{errors.root?.message}</FormError>
+        <Button
+          type="submit"
+          disabled={isSubmitting || !!oauth}
+          className={bigButton}
+        >
+          {isSubmitting ? "로그인 중…" : "로그인"}
+        </Button>
+      </form>
+      <OrDivider />
+      <div className="flex flex-col gap-1.5">
+        {(["google", "kakao"] as const).map((p) => (
+          <SocialButton
+            key={p}
+            provider={p}
+            busy={oauth === p}
+            disabled={!!oauth || isSubmitting}
+            onClick={() => void social(p)}
+          />
+        ))}
+        {oauth && (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            onClick={() => cancelOAuth()}
+          >
+            브라우저에서 로그인 중… 취소
+          </button>
+        )}
+      </div>
+      <p className="text-center text-xs text-muted-foreground">
+        계정이 없으신가요?{" "}
+        <button
+          type="button"
+          className="font-semibold text-primary hover:underline"
+          onClick={() => setMode("signup")}
+        >
+          회원가입
+        </button>
+      </p>
     </div>
   )
 }
