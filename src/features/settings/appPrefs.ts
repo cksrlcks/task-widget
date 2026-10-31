@@ -3,6 +3,7 @@ import { isTauri } from "@/features/shell/platform"
 import type { Anchor } from "@/features/widget/windowPos"
 
 export type Theme = "system" | "light" | "dark"
+export type SectionId = "pomodoro" | "todos" | "calendar"
 
 export type AppPrefs = {
   theme: Theme
@@ -21,6 +22,8 @@ export type AppPrefs = {
   longBreakMin: number
   longBreakEvery: number
   sound: boolean
+  /** 사용자가 경계를 끌어 정한 섹션 높이(px). 없으면 내용 크기 */
+  sectionHeights: Partial<Record<SectionId, number>>
 }
 
 const KEY = "taskwidget.prefs"
@@ -38,6 +41,7 @@ export const DEFAULTS: AppPrefs = {
   longBreakMin: 15,
   longBreakEvery: 4,
   sound: true,
+  sectionHeights: {},
 }
 const THEMES: Theme[] = ["system", "light", "dark"]
 const ZOOMS = [0.9, 1, 1.1, 1.25]
@@ -50,6 +54,13 @@ const num = (v: unknown, min: number, max: number, def: number) =>
 const oneOf = <T>(v: unknown, opts: T[], def: T) =>
   opts.includes(v as T) ? (v as T) : def
 const bool = (v: unknown, def: boolean) => (typeof v === "boolean" ? v : def)
+const SECTIONS: SectionId[] = ["pomodoro", "todos", "calendar"]
+const heights = (v: unknown): AppPrefs["sectionHeights"] => {
+  const o = v && typeof v === "object" ? (v as Record<string, unknown>) : {}
+  return Object.fromEntries(
+    SECTIONS.flatMap((k) => (typeof o[k] === "number" ? [[k, num(o[k], 48, 2000, 0)]] : [])),
+  )
+}
 
 /** 저장된 문자열을 파싱해 기본값과 합치고 범위를 맞춘다. 순수 함수 */
 export function loadPrefs(raw: string | null): AppPrefs {
@@ -76,6 +87,7 @@ export function loadPrefs(raw: string | null): AppPrefs {
     longBreakMin: num(s.longBreakMin, 1, 120, d.longBreakMin),
     longBreakEvery: num(s.longBreakEvery, 1, 10, d.longBreakEvery),
     sound: bool(s.sound, d.sound),
+    sectionHeights: heights(s.sectionHeights),
   }
 }
 

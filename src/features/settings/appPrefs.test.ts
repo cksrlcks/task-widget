@@ -2,6 +2,12 @@ import { describe, expect, test } from "vitest"
 import { DEFAULTS, loadPrefs } from "./appPrefs"
 
 describe("loadPrefs", () => {
+  test("section heights: keeps known numeric keys, clamps, drops junk", () => {
+    expect(
+      loadPrefs('{"sectionHeights":{"todos":10,"calendar":300,"x":5,"pomodoro":"a"}}').sectionHeights,
+    ).toEqual({ todos: 48, calendar: 300 })
+  })
+
   test("defaults match spec", () => {
     expect(loadPrefs(null)).toEqual({
       theme: "system",
@@ -17,6 +23,7 @@ describe("loadPrefs", () => {
       longBreakMin: 15,
       longBreakEvery: 4,
       sound: true,
+      sectionHeights: {},
     })
   })
   test("partial saved prefs merge over defaults", () => {

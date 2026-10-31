@@ -1,9 +1,14 @@
-import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
 import { useEffect, useRef, useState } from "react"
+import {
+  IconCalendarMonth,
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronUp,
+} from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { WidgetCard } from "@/features/widget/WidgetCard"
 import { cn } from "@/lib/utils"
-import { DayPanel } from "./DayPanel"
+import { dayLabel, DayPanel } from "./DayPanel"
 import { monthGrid, shiftMonth, toYmd } from "./monthGrid"
 import { useMonthEvents } from "./queries"
 
@@ -29,6 +34,8 @@ function useToday() {
 export function CalendarSection({ className }: Props) {
   const [ym, setYm] = useState(() => toYmd(new Date()).slice(0, 7))
   const [selected, setSelected] = useState<string | null>(null)
+  // 기본은 오늘 일정만. 달력 보기를 누르면 월간 달력이 펼쳐진다
+  const [expanded, setExpanded] = useState(false)
   const cardRef = useRef<HTMLElement>(null)
   const y = Number(ym.slice(0, 4))
   const m = Number(ym.slice(5))
@@ -42,6 +49,39 @@ export function CalendarSection({ className }: Props) {
   }
 
   const thisMonth = today.slice(0, 7)
+  const toggle = (
+    <Button
+      variant="ghost"
+      size="xs"
+      aria-expanded={expanded}
+      onClick={() => {
+        setExpanded(!expanded)
+        setYm(thisMonth)
+        setSelected(null)
+      }}
+    >
+      {expanded ? <IconChevronUp /> : <IconCalendarMonth />}
+      {expanded ? "접기" : "달력 보기"}
+    </Button>
+  )
+
+  if (!expanded)
+    return (
+      <WidgetCard
+        ref={cardRef}
+        className={className}
+        title={`오늘 · ${dayLabel(today)}`}
+        action={toggle}
+      >
+        <DayPanel
+          ymd={today}
+          events={data}
+          dialogContainer={cardRef}
+          hideLabel
+          className="border-t-0 pt-0"
+        />
+      </WidgetCard>
+    )
 
   return (
     <WidgetCard
@@ -50,6 +90,7 @@ export function CalendarSection({ className }: Props) {
       title={`${y}년 ${m}월`}
       action={
         <>
+          {toggle}
           {ym !== thisMonth && (
             <Button
               variant="ghost"
@@ -62,10 +103,22 @@ export function CalendarSection({ className }: Props) {
               오늘
             </Button>
           )}
-          <Button variant="ghost" size="icon-xs" aria-label="이전 달" title="이전 달" onClick={() => move(-1)}>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label="이전 달"
+            title="이전 달"
+            onClick={() => move(-1)}
+          >
             <IconChevronLeft />
           </Button>
-          <Button variant="ghost" size="icon-xs" aria-label="다음 달" title="다음 달" onClick={() => move(1)}>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label="다음 달"
+            title="다음 달"
+            onClick={() => move(1)}
+          >
             <IconChevronRight />
           </Button>
         </>
@@ -101,7 +154,8 @@ export function CalendarSection({ className }: Props) {
               className={cn(
                 "relative flex size-7 items-center justify-center rounded-full tabular-nums group-hover/day:bg-muted group-focus-visible/day:ring-2 group-focus-visible/day:ring-primary/40",
                 !inMonth && "text-muted-foreground/50",
-                selected === ymd && "bg-accent ring-1 ring-primary group-hover/day:bg-accent",
+                selected === ymd &&
+                  "bg-accent ring-1 ring-primary group-hover/day:bg-accent",
                 ymd === today &&
                   "bg-primary font-semibold text-primary-foreground group-hover/day:bg-primary-hover",
               )}
@@ -124,7 +178,9 @@ export function CalendarSection({ className }: Props) {
           {isLoading ? "불러오는 중..." : "일정을 불러오지 못했습니다."}
         </p>
       )}
-      {selected && <DayPanel ymd={selected} events={data} dialogContainer={cardRef} />}
+      {selected && (
+        <DayPanel ymd={selected} events={data} dialogContainer={cardRef} />
+      )}
     </WidgetCard>
   )
 }

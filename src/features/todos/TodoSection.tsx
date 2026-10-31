@@ -1,5 +1,15 @@
-import { IconListCheck, IconPlus, IconTrash } from "@tabler/icons-react"
-import { useRef, useState } from "react"
+import {
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react"
+import {
+  IconGripVertical,
+  IconListCheck,
+  IconPlus,
+  IconX,
+} from "@tabler/icons-react"
 import { toast } from "sonner"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -8,16 +18,34 @@ import { Input } from "@/components/ui/input"
 import { WidgetCard } from "@/features/widget/WidgetCard"
 import { useConfirm } from "@/hooks/use-confirm"
 import { cn } from "@/lib/utils"
-import { useAddTodo, useClearDone, useDeleteTodo, useTodos, useUpdateTodo } from "./queries"
+import {
+  useAddTodo,
+  useClearDone,
+  useDeleteTodo,
+  useReorderTodos,
+  useTodos,
+  useUpdateTodo,
+} from "./queries"
+import { reorder } from "./sortTodos"
 import type { Todo } from "./type"
 
 const titleSchema = z.string().trim().min(1).max(500)
 const fail = (err: unknown) =>
-  toast.error(err instanceof Error ? err.message : "할 일을 저장하지 못했습니다.")
+  toast.error(
+    err instanceof Error ? err.message : "할 일을 저장하지 못했습니다.",
+  )
 
 type Props = { className?: string }
 
-function TodoRow({ todo }: { todo: Todo }) {
+type RowProps = {
+  todo: Todo
+  /** 안 한 일만: 손잡이를 누르면 끌기 시작 */
+  onGrab?: (e: ReactPointerEvent) => void
+  dragging?: boolean
+  style?: CSSProperties
+}
+
+function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
   const update = useUpdateTodo()
   const del = useDeleteTodo()
   const [editing, setEditing] = useState(false)
@@ -39,11 +67,34 @@ function TodoRow({ todo }: { todo: Todo }) {
   }
 
   return (
-    <li data-no-drag className="group flex min-h-8 items-center gap-2.5 rounded-md px-2 hover:bg-muted/70">
+    <li
+      data-no-drag
+      data-undone={todo.done ? undefined : ""}
+      style={style}
+      className={cn(
+        "group relative flex min-h-9 items-center gap-2 rounded-md pr-1 pl-0.5 hover:bg-muted/70",
+        dragging
+          ? "z-10 bg-card shadow-md"
+          : "transition-transform duration-150",
+      )}
+    >
+      <span
+        aria-hidden
+        onPointerDown={onGrab}
+        className={cn(
+          "flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground/60 opacity-0 group-hover:opacity-100 active:cursor-grabbing",
+          !onGrab && "invisible",
+          dragging && "opacity-100",
+        )}
+      >
+        <IconGripVertical className="size-3.5" />
+      </span>
       <Checkbox
         aria-label={`${todo.title} 완료`}
         checked={todo.done}
-        onCheckedChange={(v) => update.mutate({ id: todo.id, done: !!v }, { onError: fail })}
+        onCheckedChange={(v) =>
+          update.mutate({ id: todo.id, done: !!v }, { onError: fail })
+        }
       />
       {editing ? (
         <Input
@@ -69,8 +120,13 @@ function TodoRow({ todo }: { todo: Todo }) {
         <span
           tabIndex={0}
           onDoubleClick={startEdit}
-          onKeyDown={(e) => (e.key === "Enter" || e.key === "F2") && startEdit()}
-          className={cn("flex-1 break-all text-sm", todo.done && "text-muted-foreground line-through opacity-60")}
+          onKeyDown={(e) =>
+            (e.key === "Enter" || e.key === "F2") && startEdit()
+          }
+          className={cn(
+            "flex-1 text-sm break-all",
+            todo.done && "text-muted-foreground line-through opacity-60",
+          )}
         >
           {todo.title}
         </span>
@@ -79,10 +135,11 @@ function TodoRow({ todo }: { todo: Todo }) {
         variant="ghost"
         size="icon-xs"
         aria-label="삭제"
-        className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+        title="삭제"
+        className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
         onClick={() => del.mutate(todo.id, { onError: fail })}
       >
-        <IconTrash />
+        <IconX />
       </Button>
     </li>
   )
@@ -95,6 +152,55 @@ export function TodoSection({ className }: Props) {
   const confirm = useConfirm()
   const [draft, setDraft] = useState("")
   const hasDone = data.some((t) => t.done)
+  const undone = data.filter((t) => !t.done)
+  const move = useReorderTodos()
+  const listRef = useRef<HTMLUListElement>(null)
+  // 끄는 중: 몇 번째를 어디로, 얼마나 내렸는지
+  const [drag, setDrag] = useState<{
+    from: number
+    to: number
+    dy: number
+    h: number
+  } | null>(null)
+
+  const grab = (from: number) => (e: ReactPointerEvent) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    const rows = [
+      ...(listRef.current?.querySelectorAll<HTMLElement>("[data-undone]") ??
+        []),
+    ]
+    const mids = rows.map((r) => {
+      const b = r.getBoundingClientRect()
+      return b.top + b.height / 2
+    })
+    const h = rows[from].getBoundingClientRect().height
+    const startY = e.clientY
+    let to = from
+    setDrag({ from, to, dy: 0, h })
+    const onMove = (ev: PointerEvent) => {
+      to = mids.filter((m, i) => i !== from && m < ev.clientY).length
+      setDrag({ from, to, dy: ev.clientY - startY, h })
+    }
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+      setDrag(null)
+      const ups = reorder(undone, from, to)
+      if (ups.length) move.mutate(ups, { onError: fail })
+    }
+    window.addEventListener("pointermove", onMove)
+    window.addEventListener("pointerup", onUp)
+  }
+
+  // 끄는 행은 포인터를 따라가고, 그 사이 행들은 한 칸씩 비켜 준다
+  const shift = (i: number): CSSProperties | undefined => {
+    if (!drag) return
+    const { from, to, dy, h } = drag
+    if (i === from) return { transform: `translateY(${dy}px)` }
+    if (from < i && i <= to) return { transform: `translateY(${-h}px)` }
+    if (to <= i && i < from) return { transform: `translateY(${h}px)` }
+  }
 
   const submit = () => {
     const r = titleSchema.safeParse(draft)
@@ -103,8 +209,17 @@ export function TodoSection({ className }: Props) {
   }
 
   const clearDone = async () => {
-    if (!(await confirm("완료 항목을 지울까요?", "완료된 할 일이 모두 삭제됩니다."))) return
-    clear.mutate(data.filter((t) => t.done).map((t) => t.id), { onError: fail })
+    if (
+      !(await confirm(
+        "완료 항목을 지울까요?",
+        "완료된 할 일이 모두 삭제됩니다.",
+      ))
+    )
+      return
+    clear.mutate(
+      data.filter((t) => t.done).map((t) => t.id),
+      { onError: fail },
+    )
   }
 
   const left = data.filter((t) => !t.done).length
@@ -137,18 +252,36 @@ export function TodoSection({ className }: Props) {
           value={draft}
           maxLength={500}
           placeholder="할 일 추가"
-          className="pl-8"
+          className="h-10 pl-8 text-sm"
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && submit()}
+          onKeyDown={(e) =>
+            e.key === "Enter" && !e.nativeEvent.isComposing && submit()
+          }
         />
       </div>
-      <ul className="min-h-0 flex-1 overflow-y-auto px-1 py-1.5">
+      <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-1 py-1.5">
         {isLoading || isError || data.length === 0 ? (
           <li className="py-4 text-center text-sm text-muted-foreground">
-            {isLoading ? "불러오는 중..." : isError ? "할 일을 불러오지 못했습니다." : "할 일이 없어요"}
+            {isLoading
+              ? "불러오는 중..."
+              : isError
+                ? "할 일을 불러오지 못했습니다."
+                : "할 일이 없어요"}
           </li>
         ) : (
-          data.map((t) => <TodoRow key={t.id} todo={t} />)
+          data.map((t, i) =>
+            t.done ? (
+              <TodoRow key={t.id} todo={t} />
+            ) : (
+              <TodoRow
+                key={t.id}
+                todo={t}
+                onGrab={grab(i)}
+                dragging={drag?.from === i}
+                style={shift(i)}
+              />
+            ),
+          )
         )}
       </ul>
     </WidgetCard>
