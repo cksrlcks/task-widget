@@ -2,6 +2,7 @@ import React from "react"
 import ReactDOM from "react-dom/client"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { Toaster } from "sonner"
+import { SettingsWindow } from "@/features/settings/SettingsWindow"
 import { getPrefs, initPrefs } from "@/features/settings/appPrefs"
 import { isTauri } from "@/features/shell/platform"
 import { initWindow } from "@/features/widget/windowPos"
@@ -11,10 +12,11 @@ import App from "./App"
 import "./index.css"
 
 const queryClient = new QueryClient()
-// Task 10에서 설정 화면으로 바꾼다
 const isSettings = location.hash === "#settings"
 
-if (isSettings || !isTauri()) initPrefs()
+// 설정 창은 테마만 따른다. 배율·창 속성은 위젯 창이 storage 이벤트로 적용한다
+if (isSettings) initPrefs({ windowEffects: false })
+else if (!isTauri()) initPrefs()
 else {
   // 투명 창: body는 비우고 App이 둥근 배경을 그린다
   document.body.classList.add("bg-transparent")
@@ -28,7 +30,7 @@ void initPb().then(() =>
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
         <ConfirmProvider>
-          {isSettings ? <p className="p-6 text-sm">설정</p> : <App />}
+          {isSettings ? <SettingsWindow /> : <App />}
         </ConfirmProvider>
         <Toaster />
       </QueryClientProvider>

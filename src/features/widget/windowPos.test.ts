@@ -45,3 +45,13 @@ test("top bar center decides: body on screen but bar above it falls back", () =>
     ),
   ).toEqual(defaultRect(work, 500))
 })
+test("saved height is clamped to the monitor work area", () => {
+  expect(
+    clampToMonitors(
+      { x: 100, y: 0, width: 500, height: 3000 },
+      [work],
+      work,
+      500,
+    ).height,
+  ).toBe(work.height)
+})

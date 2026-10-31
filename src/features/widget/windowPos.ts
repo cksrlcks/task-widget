@@ -30,8 +30,9 @@ export function clampToMonitors(
   primaryWork: Rect,
   width: number,
 ): Rect {
-  if (saved && monitors.some((m) => barInside(saved, m)))
-    return { ...saved, width }
+  const home = saved && monitors.find((m) => barInside(saved, m))
+  if (saved && home)
+    return { ...saved, width, height: Math.min(saved.height, home.height) }
   return defaultRect(primaryWork, width)
 }
 
