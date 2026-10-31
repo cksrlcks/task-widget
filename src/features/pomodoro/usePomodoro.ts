@@ -28,6 +28,8 @@ export function usePomodoro() {
   const d: Durations = { focusMin, shortBreakMin, longBreakMin, longBreakEvery }
   const dRef = useRef(d)
   dRef.current = d
+  const soundRef = useRef(sound)
+  soundRef.current = sound
   const [state, setState] = useState(() => initial(d))
   const [now, setNow] = useState(() => Date.now())
 
@@ -45,14 +47,14 @@ export function usePomodoro() {
   const phase = state.phase
   useEffect(() => {
     if (state.status !== "done") return
-    if (sound) void new Audio("/ding.wav").play().catch(() => {})
+    if (soundRef.current) void new Audio("/ding.wav").play().catch(() => {})
     if (isTauri())
       void notify(
         phase === "focus"
           ? "집중 끝! 휴식할 시간이에요"
           : "휴식 끝! 다시 집중할 시간이에요",
       ).catch(() => {})
-  }, [state.status, phase, sound])
+  }, [state.status, phase])
 
   const act = useCallback(
     (f: (s: PomoState, t: number) => PomoState) => {

@@ -29,7 +29,12 @@ export function PomodoroSection({ className }: Props) {
       <div className="text-5xl font-semibold tabular-nums">{mmss}</div>
       <div className="flex gap-2">
         {status === "done" ? (
-          <Button onClick={p.next}>
+          <Button
+            onClick={() => {
+              p.next()
+              p.start()
+            }}
+          >
             {phase === "focus" ? "휴식 시작하기" : "집중 시작하기"}
           </Button>
         ) : (
