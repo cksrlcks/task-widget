@@ -1,9 +1,10 @@
+import { ClientResponseError } from "pocketbase"
 import { openExternal } from "@/features/shell/platform"
 import { pb } from "@/lib/pb"
 import { AuthNotice } from "./authErrors"
 
 export type Provider = "google" | "kakao"
-type Client = Pick<typeof pb, "authStore" | "collection">
+type Client = Pick<typeof pb, "authStore" | "collection" | "cancelRequest">
 
 const PROVIDERS: Provider[] = ["google", "kakao"]
 
@@ -16,19 +17,35 @@ export function assertEmail(meta: { email?: string } | undefined): void {
   if (!meta?.email) throw new AuthNotice("카카오(또는 구글)에서 이메일 제공에 동의해 주세요.")
 }
 
-const oauth = (c: Client, provider: Provider) =>
-  c.collection("users").authWithOAuth2({ provider, urlCallback: openExternal })
+const KEY = "oauth2" // 로그인/연결은 동시에 하나만 진행된다
+const TIMEOUT_MS = 3 * 60 * 1000
+
+/** 진행 중인 OAuth 흐름을 취소한다. 브라우저를 닫아도 SDK는 알 수 없어서 필요하다 */
+export const cancelOAuth = (c: Client = pb) => void c.cancelRequest(KEY)
+
+/** 사용자가 취소했거나 시간 초과로 취소된 경우. 에러 안내 없이 넘어간다 */
+export const isOAuthCancelled = (err: unknown) =>
+  err instanceof ClientResponseError && err.isAbort
+
+async function oauth(c: Client, provider: Provider) {
+  const timer = setTimeout(() => cancelOAuth(c), TIMEOUT_MS)
+  try {
+    return await c
+      .collection("users")
+      .authWithOAuth2({ provider, urlCallback: openExternal, requestKey: KEY })
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 /** 로그인 안 된 상태. 이메일이 없으면 계정을 남기지 않고 막는다 */
 export async function signInWithProvider(provider: Provider, c: Client = pb): Promise<void> {
   const { record, meta } = await oauth(c, provider)
   if (meta?.email) return
   // 본인 레코드 삭제는 인증이 필요하므로 clear 전에 지운다
-  try {
-    if (meta?.isNew === true) await c.collection("users").delete(record.id)
-  } finally {
-    c.authStore.clear()
-  }
+  // shortcut: 삭제 실패 시 이메일 없는 레코드가 남는다(로그인은 계속 막힘), 쌓이면 서버 정리 작업 추가
+  if (meta?.isNew === true) await c.collection("users").delete(record.id).catch(() => {})
+  c.authStore.clear()
   assertEmail(meta)
 }
 
@@ -43,17 +60,19 @@ export async function linkProvider(provider: Provider, c: Client = pb): Promise<
   }
 }
 
-export async function listLinked(): Promise<Provider[]> {
-  const id = pb.authStore.record?.id
+export async function listLinked(c: Client = pb): Promise<Provider[]> {
+  const id = c.authStore.record?.id
   if (!id) return []
-  const auths = await pb.collection("users").listExternalAuths(id)
+  const auths = await c.collection("users").listExternalAuths(id)
   return PROVIDERS.filter((p) => auths.some((a) => a.provider === p))
 }
 
-export async function unlinkProvider(provider: Provider): Promise<void> {
-  const rec = pb.authStore.record
+export async function unlinkProvider(provider: Provider, c: Client = pb): Promise<void> {
+  const rec = c.authStore.record
   if (!rec) throw new AuthNotice("로그인이 필요합니다.")
-  if (!canUnlink(await listLinked(), rec.hasPassword === true))
+  // authStore의 레코드는 오래됐을 수 있어 hasPassword는 새로 읽는다
+  const { hasPassword } = await c.collection("users").getOne(rec.id)
+  if (!canUnlink(await listLinked(c), hasPassword === true))
     throw new AuthNotice("로그인 수단이 하나뿐이라 연결을 해제할 수 없습니다.")
-  await pb.collection("users").unlinkExternalAuth(rec.id, provider)
+  await c.collection("users").unlinkExternalAuth(rec.id, provider)
 }

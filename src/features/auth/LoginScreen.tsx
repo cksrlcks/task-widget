@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { pb } from "@/lib/pb"
 import { authErrorMessage } from "./authErrors"
-import { signInWithProvider, type Provider } from "./oauth"
+import { cancelOAuth, isOAuthCancelled, signInWithProvider, type Provider } from "./oauth"
 import { ResetForm } from "./ResetForm"
 import { SignupForm } from "./SignupForm"
 
@@ -39,7 +39,7 @@ export function LoginScreen() {
     try {
       await signInWithProvider(p)
     } catch (err) {
-      setError("root", { message: authErrorMessage(err, "oauth") })
+      if (!isOAuthCancelled(err)) setError("root", { message: authErrorMessage(err, "oauth") })
     } finally {
       setOauthBusy(false)
     }
@@ -71,6 +71,11 @@ export function LoginScreen() {
           <Button variant="outline" disabled={oauthBusy} onClick={() => social("kakao")}>
             카카오로 계속하기
           </Button>
+          {oauthBusy && (
+            <Button variant="ghost" onClick={() => cancelOAuth()}>
+              취소
+            </Button>
+          )}
           <div className="flex justify-between text-xs">
             <button type="button" className="underline" onClick={() => setMode("signup")}>
               회원가입
