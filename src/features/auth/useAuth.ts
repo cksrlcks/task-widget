@@ -4,14 +4,18 @@ import { pb } from "@/lib/pb"
 import { bootAuth, type BootResult } from "./bootAuth"
 
 let boot: BootResult | "loading" = "loading"
+let inFlight = false // StrictMode 이중 마운트에서 authRefresh 두 번 방지
 const listeners = new Set<() => void>()
 const emit = () => listeners.forEach((l) => l())
 
 /** 앱 시작/다시 시도. 토큰 검증 결과를 boot에 반영 */
 export function runBoot() {
+  if (inFlight) return
+  inFlight = true
   boot = "loading"
   emit()
   void bootAuth(pb).then((r) => {
+    inFlight = false
     boot = r
     emit()
   })

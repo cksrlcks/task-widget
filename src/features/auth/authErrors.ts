@@ -2,7 +2,11 @@ import { ClientResponseError } from "pocketbase"
 
 export type AuthCtx = "login" | "signup" | "oauth" | "link"
 
+/** 우리 코드가 사용자에게 그대로 보여줄 문구로 던지는 에러 */
+export class AuthNotice extends Error {}
+
 export function authErrorMessage(err: unknown, ctx: AuthCtx): string {
+  if (err instanceof AuthNotice && (ctx === "oauth" || ctx === "link")) return err.message
   if (!(err instanceof ClientResponseError)) return "요청을 처리하지 못했습니다."
   if (err.status === 0) return "서버에 연결할 수 없습니다."
   if (ctx === "signup" && err.response?.data?.email?.code === "validation_not_unique")

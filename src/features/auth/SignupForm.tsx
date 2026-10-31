@@ -33,10 +33,17 @@ export function SignupForm({ onBack }: Props) {
   const onSubmit = async (v: FormValues) => {
     try {
       await pb.collection("users").create({ ...v, hasPassword: true })
+    } catch (err) {
+      return setError("root", { message: authErrorMessage(err, "signup") })
+    }
+    try {
       await pb.collection("users").requestVerification(v.email)
       setSent(true)
-    } catch (err) {
-      setError("root", { message: authErrorMessage(err, "signup") })
+    } catch {
+      setError("root", {
+        message:
+          "가입은 완료됐지만 인증 메일을 보내지 못했습니다. 로그인 화면의 비밀번호 찾기로 다시 시도하세요.",
+      })
     }
   }
 
