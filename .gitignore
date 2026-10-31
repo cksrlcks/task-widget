@@ -4,3 +4,6 @@ dist/
 src-tauri/target/
 .env
 server/pb_data/
+server/.bin/
+dist-ssr
+*.local
