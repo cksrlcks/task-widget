@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f86f0"/>
+      <stop offset="1" stop-color="#0a56b3"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="216" fill="url(#bg)"/>
+  <!-- 뽀모도로 링: 3/4 진행 -->
+  <circle cx="512" cy="512" r="290" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="88"/>
+  <circle cx="512" cy="512" r="290" fill="none" stroke="#fff" stroke-width="88" stroke-linecap="round"
+          stroke-dasharray="1366.6 1822.1" transform="rotate(-90 512 512)"/>
+  <!-- 할 일 체크 -->
+  <path d="M388 520 L480 610 L648 430" fill="none" stroke="#fff" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
