@@ -39,7 +39,7 @@ function TodoRow({ todo }: { todo: Todo }) {
   }
 
   return (
-    <li className="group flex min-h-8 items-center gap-2.5 rounded-md px-2 hover:bg-muted/70">
+    <li data-no-drag className="group flex min-h-8 items-center gap-2.5 rounded-md px-2 hover:bg-muted/70">
       <Checkbox
         aria-label={`${todo.title} 완료`}
         checked={todo.done}

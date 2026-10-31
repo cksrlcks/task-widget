@@ -10,7 +10,7 @@ import { Toaster } from "sonner"
 import { isSessionLost } from "@/features/auth/authExpiry"
 import { startAuthSession } from "@/features/auth/useAuth"
 import { SettingsWindow } from "@/features/settings/SettingsWindow"
-import { getPrefs, initPrefs } from "@/features/settings/appPrefs"
+import { getPrefs, initPrefs, setPrefs } from "@/features/settings/appPrefs"
 import { isTauri } from "@/features/shell/platform"
 import { initWindow } from "@/features/widget/windowPos"
 import { ConfirmProvider } from "@/hooks/use-confirm"
@@ -49,7 +49,10 @@ async function start() {
     // 투명 창: body는 비우고 App이 둥근 배경을 그린다
     document.body.classList.add("bg-transparent")
     // 위치를 잡고 띄운 뒤 창 속성(항상 위)을 적용한다
-    await initWindow(() => getPrefs().anchor).catch(console.error)
+    await initWindow(
+      () => getPrefs().anchor,
+      (anchor) => setPrefs({ anchor }),
+    ).catch(console.error)
     initPrefs()
   }
   if (failure) throw failure

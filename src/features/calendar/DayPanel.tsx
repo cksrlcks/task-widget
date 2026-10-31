@@ -139,7 +139,7 @@ function EventRow({ event, onEdit }: { event: CalEvent; onEdit: () => void }) {
   }
 
   return (
-    <li className="group flex items-start gap-2 rounded-md px-2 py-1 hover:bg-muted/70">
+    <li data-no-drag className="group flex items-start gap-2 rounded-md px-2 py-1 hover:bg-muted/70">
       <span className="w-9 shrink-0 text-xs leading-5 text-muted-foreground tabular-nums">
         {event.time || "종일"}
       </span>

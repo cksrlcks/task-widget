@@ -9,7 +9,7 @@ export type Screen = { work: Rect; scale: number }
 
 /** 화면 가장자리와 위젯 사이 여백(논리 px) */
 export const MARGIN = 20
-export const DEFAULT_SIZE: Size = { width: 360, height: 720 }
+export const DEFAULT_SIZE: Size = { width: 320, height: 720 }
 
 const BAR = 32
 
@@ -31,6 +31,11 @@ export function anchoredRect(
     width,
     height,
   }
+}
+
+/** 고정 모드에서 끌어다 놓으면 창 중심이 화면 위쪽 절반이면 오른쪽 위, 아래쪽이면 오른쪽 아래 */
+export function nearestAnchor(r: Rect, work: Rect): Exclude<Anchor, "free"> {
+  return r.y + r.height / 2 < work.y + work.height / 2 ? "top-right" : "bottom-right"
 }
 
 /** 상단 바(위 32px) 중심점이 m 안에 있나 */
@@ -73,7 +78,10 @@ let snapNow: (() => void) | null = null
 export const snapWindow = () => snapNow?.()
 
 /** 위젯 창 시작: 위치 복원 → show. 이동·크기 변경이 멈추면 고정 위치에 다시 붙이고 window.json에 저장 */
-export async function initWindow(getAnchor: () => Anchor) {
+export async function initWindow(
+  getAnchor: () => Anchor,
+  setAnchor: (a: Anchor) => void,
+) {
   const {
     availableMonitors,
     currentMonitor,
@@ -99,13 +107,20 @@ export async function initWindow(getAnchor: () => Anchor) {
     await w.show()
   }
 
-  const snap = async () => {
-    const anchor = getAnchor()
+  /** moved = 사용자가 창을 끌어 옮겼다(크기 조절 없이). 그러면 가까운 모서리로 고정 위치를 바꾼다 */
+  const snap = async (moved = false) => {
+    let anchor = getAnchor()
     if (anchor === "free") return
     const mon = await currentMonitor()
     if (!mon) return
     const s = screenOf(mon)
     const [p, size] = await Promise.all([w.outerPosition(), w.outerSize()])
+    if (moved) {
+      const near = nearestAnchor({ ...p, ...size }, s.work)
+      // 설정이 바뀌면 apply → snapWindow로 다시 들어와 붙는다
+      if (near !== anchor) return setAnchor(near)
+      anchor = near
+    }
     const r = anchoredRect(s.work, size, anchor, Math.round(MARGIN * s.scale))
     if (r.width !== size.width || r.height !== size.height)
       await w.setSize(new PhysicalSize(r.width, r.height))
@@ -114,13 +129,20 @@ export async function initWindow(getAnchor: () => Anchor) {
   }
   snapNow = () => void snap().catch(console.error)
 
-  // 드래그 중에는 건드리지 않고, 멈춘 뒤 한 번 붙이고 저장한다
+  // 드래그 중에는 건드리지 않고, 멈춘 뒤 한 번 붙이고 저장한다.
+  // 왼쪽·위 가장자리로 크기를 바꿔도 onMoved가 오므로, 그동안 크기도 바뀌었으면 옮긴 게 아니다
   let timer: ReturnType<typeof setTimeout> | undefined
-  const settle = () => {
+  let moved = false
+  let resized = false
+  const settle = (kind: "move" | "resize") => () => {
+    if (kind === "move") moved = true
+    else resized = true
     clearTimeout(timer)
     timer = setTimeout(async () => {
+      const dragged = moved && !resized
+      moved = resized = false
       if (await w.isMinimized()) return
-      await snap().catch(console.error)
+      await snap(dragged).catch(console.error)
       const [p, s] = await Promise.all([w.outerPosition(), w.outerSize()])
       await store.set("rect", {
         x: p.x,
@@ -131,6 +153,6 @@ export async function initWindow(getAnchor: () => Anchor) {
       await store.save()
     }, 400)
   }
-  await w.onMoved(settle)
-  await w.onResized(settle)
+  await w.onMoved(settle("move"))
+  await w.onResized(settle("resize"))
 }
