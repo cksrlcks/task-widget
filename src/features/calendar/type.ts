@@ -5,3 +5,5 @@ export type CalEvent = {
   time: string
   memo: string
 }
+
+export type EventInput = Pick<CalEvent, "title" | "date" | "time" | "memo">
