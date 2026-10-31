@@ -5,7 +5,8 @@ export type BootResult = "authed" | "login" | "offline"
 export async function bootAuth(
   client: Pick<PocketBase, "authStore" | "collection">,
 ): Promise<BootResult> {
-  if (!client.authStore.token) return "login"
+  // 웹은 token 없이 쿠키 세션 표시(isValid)만 있다
+  if (!client.authStore.token && !client.authStore.isValid) return "login"
   try {
     await client.collection("users").authRefresh()
     return "authed"

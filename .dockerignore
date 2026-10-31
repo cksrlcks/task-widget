@@ -1,0 +1,10 @@
+.git
+node_modules
+dist
+src-tauri
+server/pb_data
+server/.bin
+server/test
+.superpowers
+.env
+*.local

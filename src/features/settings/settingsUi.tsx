@@ -9,8 +9,8 @@ export function Section({
   children: ReactNode
 }) {
   return (
-    <section className="mb-7 last:mb-0">
-      <h3 className="mb-1 text-xs text-muted-foreground">{title}</h3>
+    <section className="mb-3 last:mb-0">
+      <h3 className="text-xs font-semibold text-muted-foreground">{title}</h3>
       <div className="divide-y divide-border">{children}</div>
     </section>
   )
@@ -26,10 +26,10 @@ export function Row({
   children?: ReactNode
 }) {
   return (
-    <div className="flex min-h-[69px] items-center gap-6 py-3.5">
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-base font-semibold">{title}</span>
-        {desc && <span className="text-sm text-muted-foreground">{desc}</span>}
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 py-2.5">
+      <div className="flex min-w-[9rem] flex-1 flex-col gap-0.5">
+        <span className="text-sm font-medium">{title}</span>
+        {desc && <span className="text-xs text-muted-foreground">{desc}</span>}
       </div>
       {children}
     </div>
@@ -96,8 +96,9 @@ export function Segmented<T extends string | number>({
           disabled={disabled}
           onClick={() => onChange(o.value)}
           className={cn(
-            "h-7 rounded-[8px] px-3 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40",
-            value === o.value && "bg-card font-medium text-foreground shadow-sm",
+            "h-7 rounded-[8px] px-2.5 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40",
+            value === o.value &&
+              "bg-card font-medium text-foreground shadow-sm",
           )}
         >
           {o.label}

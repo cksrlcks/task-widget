@@ -1,11 +1,14 @@
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { LoginScreen } from "@/features/auth/LoginScreen"
 import { runBoot, useAuth } from "@/features/auth/useAuth"
+import { SettingsView } from "@/features/settings/SettingsView"
 import { isTauri } from "@/features/shell/platform"
 import { useUpdateCheck } from "@/features/update/useUpdateCheck"
 import { TopBar } from "@/features/widget/TopBar"
 import { Widget } from "@/features/widget/Widget"
 import { WidgetCard } from "@/features/widget/WidgetCard"
+import { cn } from "@/lib/utils"
 
 function Body() {
   const { status } = useAuth()
@@ -45,20 +48,51 @@ const startDrag = (e: React.MouseEvent) => {
   )
 }
 
-/** 투명 창. 카드만 떠 있고, 마우스를 올리면 카드 뒤로 이어진 배경이 나타난다 */
+/** 트레이 메뉴의 "설정"이 위젯에 보내는 이벤트 */
+function useTraySettings(open: () => void) {
+  useEffect(() => {
+    if (!isTauri()) return
+    const off = import("@tauri-apps/api/event").then(({ listen }) =>
+      listen("open-settings", open),
+    )
+    return () => void off.then((f) => f())
+  }, [open])
+}
+
+const web = !isTauri()
+
+/** 투명 창. 카드만 떠 있고, 마우스를 올리면 카드 뒤로 이어진 배경이 나타난다. 웹은 가운데 한 열로 늘 배경을 보인다 */
 export default function App() {
   useUpdateCheck()
+  const [settings, setSettings] = useState(false)
+  const { user } = useAuth()
+  useTraySettings(useCallback(() => setSettings(true), []))
+  // 로그아웃하면 위젯(로그인) 화면으로
+  useEffect(() => {
+    if (!user) setSettings(false)
+  }, [user])
   return (
-    <div className="group/widget relative h-screen select-none" onMouseDown={startDrag}>
+    <div
+      className={cn(
+        "group/widget relative h-screen select-none",
+        web && "mx-auto max-w-md",
+      )}
+      onMouseDown={startDrag}
+    >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-xl border border-black/[.06] bg-[#eeeeee]/95 opacity-0 transition-opacity duration-150 group-hover/widget:opacity-100 dark:border-white/[.08] dark:bg-[#1c1c1c]/95"
+        className={cn(
+          "pointer-events-none absolute inset-0 rounded-xl border border-black/[.06] bg-[#eeeeee]/95 opacity-0 transition-opacity duration-150 group-hover/widget:opacity-100 dark:border-white/[.08] dark:bg-[#1c1c1c]/95",
+          web && "rounded-none border-y-0 opacity-100",
+        )}
       />
-      <TopBar />
-      <div
-        className="relative flex h-full flex-col gap-2 overflow-y-auto p-2 [&>:first-child_[data-slot=card-header]]:pr-16"
-      >
-        <Body />
+      {!settings && <TopBar onSettings={() => setSettings(true)} />}
+      <div className="relative flex h-full flex-col gap-2 overflow-y-auto p-2 [&>:first-child_[data-slot=card-header]]:pr-16">
+        {settings ? (
+          <SettingsView onBack={() => setSettings(false)} />
+        ) : (
+          <Body />
+        )}
       </div>
     </div>
   )

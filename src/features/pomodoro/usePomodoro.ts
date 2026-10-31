@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { isTauri } from "@/features/shell/platform"
 import { useAppPrefs } from "@/features/settings/appPrefs"
+import { isTauri } from "@/features/shell/platform"
 import {
   initial,
   next,
@@ -15,6 +15,15 @@ import {
 } from "./pomodoro"
 
 async function notify(body: string) {
+  if (!isTauri()) {
+    // 웹: 브라우저 알림. 권한은 처음 한 번 묻는다
+    if (!("Notification" in window)) return
+    if (Notification.permission === "default")
+      await Notification.requestPermission()
+    if (Notification.permission === "granted")
+      new Notification("뽀모도로", { body })
+    return
+  }
   const n = await import("@tauri-apps/plugin-notification")
   // 권한이 없으면 처음 한 번 요청한다
   if (!(await n.isPermissionGranted())) {
@@ -54,22 +63,18 @@ export function usePomodoro() {
   useEffect(() => {
     if (state.status !== "done") return
     if (soundRef.current) void new Audio("/ding.wav").play().catch(() => {})
-    if (isTauri())
-      void notify(
-        phase === "focus"
-          ? "집중 끝! 휴식할 시간이에요"
-          : "휴식 끝! 다시 집중할 시간이에요",
-      ).catch(() => {})
+    void notify(
+      phase === "focus"
+        ? "집중 끝! 휴식할 시간이에요"
+        : "휴식 끝! 다시 집중할 시간이에요",
+    ).catch(() => {})
   }, [state.status, phase])
 
-  const act = useCallback(
-    (f: (s: PomoState, t: number) => PomoState) => {
-      const t = Date.now()
-      setNow(t)
-      setState((s) => f(s, t))
-    },
-    [],
-  )
+  const act = useCallback((f: (s: PomoState, t: number) => PomoState) => {
+    const t = Date.now()
+    setNow(t)
+    setState((s) => f(s, t))
+  }, [])
 
   return {
     state,

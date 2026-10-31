@@ -49,7 +49,10 @@ export function GeneralPage() {
   return (
     <>
       <Section title="모양">
-        <Row title="테마" desc="시스템을 고르면 OS의 라이트·다크 설정을 따릅니다">
+        <Row
+          title="테마"
+          desc="시스템을 고르면 OS의 라이트·다크 설정을 따릅니다"
+        >
           <Segmented
             label="테마"
             value={prefs.theme}
@@ -57,68 +60,78 @@ export function GeneralPage() {
             onChange={(theme) => setPrefs({ theme })}
           />
         </Row>
-        <Row title="화면 크기" desc="글자와 화면 요소를 함께 키우거나 줄입니다">
-          <Segmented
-            label="화면 크기"
-            value={prefs.zoom}
-            options={ZOOMS}
-            onChange={(zoom) => setPrefs({ zoom })}
-          />
-        </Row>
-        <Row
-          title="위젯 위치"
-          desc={
-            prefs.anchor === "free"
-              ? "빈 곳을 끌어 어디로든 옮깁니다. 크기는 가장자리를 끌어 조절합니다"
-              : "모서리에서 20px 띄워 고정합니다. 끌어다 놓으면 가까운 위·아래 모서리에 붙습니다"
-          }
-        >
-          <Segmented
-            label="위젯 위치"
-            value={prefs.anchor}
-            options={ANCHORS}
-            onChange={(anchor) => setPrefs({ anchor })}
-          />
-        </Row>
+        {/* 창 배율·위치·시작 설정은 데스크톱 앱에만 있다 */}
+        {app && (
+          <>
+            <Row
+              title="화면 크기"
+              desc="글자와 화면 요소를 함께 키우거나 줄입니다"
+            >
+              <Segmented
+                label="화면 크기"
+                value={prefs.zoom}
+                options={ZOOMS}
+                onChange={(zoom) => setPrefs({ zoom })}
+              />
+            </Row>
+            <Row
+              title="위젯 위치"
+              desc={
+                prefs.anchor === "free"
+                  ? "빈 곳을 끌어 어디로든 옮깁니다. 크기는 가장자리를 끌어 조절합니다"
+                  : "모서리에서 20px 띄워 고정합니다. 끌어다 놓으면 가까운 위·아래 모서리에 붙습니다"
+              }
+            >
+              <Segmented
+                label="위젯 위치"
+                value={prefs.anchor}
+                options={ANCHORS}
+                onChange={(anchor) => setPrefs({ anchor })}
+              />
+            </Row>
+          </>
+        )}
       </Section>
-      <Section title="시작 및 종료">
-        <Row title="항상 위에 표시" desc="다른 창 위에 위젯을 띄워 둡니다">
-          <Checkbox
-            aria-label="항상 위에 표시"
-            checked={prefs.alwaysOnTop}
-            onCheckedChange={(v) => setPrefs({ alwaysOnTop: !!v })}
-          />
-        </Row>
-        <Row
-          title="컴퓨터 켜면 자동 실행"
-          desc={
-            error ? (
-              <span className="text-destructive">{error}</span>
-            ) : app ? (
-              "창 없이 트레이에서 시작합니다"
-            ) : (
-              "설치된 앱에서만 바꿀 수 있습니다"
-            )
-          }
-        >
-          <Checkbox
-            aria-label="자동 실행"
-            checked={!!autostart}
-            disabled={autostart === null}
-            onCheckedChange={(v) => void toggle(!!v)}
-          />
-        </Row>
-        <Row
-          title="창을 닫아도 트레이에서 실행"
-          desc="끄면 창을 닫을 때 앱이 종료됩니다"
-        >
-          <Checkbox
-            aria-label="창을 닫아도 트레이에서 실행"
-            checked={prefs.closeToTray}
-            onCheckedChange={(v) => setPrefs({ closeToTray: !!v })}
-          />
-        </Row>
-      </Section>
+      {app && (
+        <Section title="시작 및 종료">
+          <Row title="항상 위에 표시" desc="다른 창 위에 위젯을 띄워 둡니다">
+            <Checkbox
+              aria-label="항상 위에 표시"
+              checked={prefs.alwaysOnTop}
+              onCheckedChange={(v) => setPrefs({ alwaysOnTop: !!v })}
+            />
+          </Row>
+          <Row
+            title="컴퓨터 켜면 자동 실행"
+            desc={
+              error ? (
+                <span className="text-destructive">{error}</span>
+              ) : app ? (
+                "창 없이 트레이에서 시작합니다"
+              ) : (
+                "설치된 앱에서만 바꿀 수 있습니다"
+              )
+            }
+          >
+            <Checkbox
+              aria-label="자동 실행"
+              checked={!!autostart}
+              disabled={autostart === null}
+              onCheckedChange={(v) => void toggle(!!v)}
+            />
+          </Row>
+          <Row
+            title="창을 닫아도 트레이에서 실행"
+            desc="끄면 창을 닫을 때 앱이 종료됩니다"
+          >
+            <Checkbox
+              aria-label="창을 닫아도 트레이에서 실행"
+              checked={prefs.closeToTray}
+              onCheckedChange={(v) => setPrefs({ closeToTray: !!v })}
+            />
+          </Row>
+        </Section>
+      )}
     </>
   )
 }

@@ -4,17 +4,10 @@ import { Button } from "@/components/ui/button"
 import { isTauri } from "@/features/shell/platform"
 import { cn } from "@/lib/utils"
 
-type Props = { className?: string }
+type Props = { onSettings: () => void; className?: string }
 
 const fail = (err: unknown) =>
   toast.error(err instanceof Error ? err.message : "창을 다루지 못했습니다.")
-
-const openSettings = () => {
-  if (!isTauri()) return
-  void import("@tauri-apps/api/core")
-    .then(({ invoke }) => invoke("open_settings"))
-    .catch(fail)
-}
 
 const hide = () => {
   if (!isTauri()) return
@@ -23,8 +16,8 @@ const hide = () => {
     .catch(fail)
 }
 
-/** 위젯에 마우스를 올리면 오른쪽 위에 나타나는 설정·숨기기 버튼 */
-export function TopBar({ className }: Props) {
+/** 위젯에 마우스를 올리면 오른쪽 위에 나타나는 설정·숨기기 버튼. 숨기기는 데스크톱만 */
+export function TopBar({ onSettings, className }: Props) {
   return (
     <div
       className={cn(
@@ -32,12 +25,26 @@ export function TopBar({ className }: Props) {
         className,
       )}
     >
-      <Button variant="ghost" size="icon-xs" aria-label="설정" title="설정" onClick={openSettings}>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label="설정"
+        title="설정"
+        onClick={onSettings}
+      >
         <IconSettings />
       </Button>
-      <Button variant="ghost" size="icon-xs" aria-label="숨기기" title="숨기기" onClick={hide}>
-        <IconEyeOff />
-      </Button>
+      {isTauri() && (
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="숨기기"
+          title="숨기기"
+          onClick={hide}
+        >
+          <IconEyeOff />
+        </Button>
+      )}
     </div>
   )
 }

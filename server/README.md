@@ -13,7 +13,7 @@ server/.bin/pocketbase.exe serve --dir server/pb_data --migrationsDir server/pb_
 PB_ADMIN_EMAIL=<email> PB_ADMIN_PASSWORD=<pw> npm run test:server
 ```
 
-Docker: `docker build -t task-pb server && docker run -p 8090:8090 task-pb`.
+Docker(저장소 루트에서): `docker build -t task-pb . && docker run -p 8090:8090 task-pb`. 이미지에는 웹(PWA) 빌드가 `pb_public`으로 들어 있어 `/`에서 웹 앱이 열린다.
 
 비밀번호 재설정 테스트는 메일을 받을 수 없어, 서버와 같은 방식으로 재설정 JWT를 직접 서명한다
 (`pb_data/data.db`를 읽기 전용으로 열어 `tokenKey` + `passwordResetToken.secret` 사용; `PB_DATA_DIR`로 경로 변경 가능).
@@ -45,7 +45,7 @@ OAuth로 새로 만들어진 계정은 `SetVerified(true)`로 verified 처리된
 
 ## Dokploy 배포
 
-1. Dokploy에서 Application 생성 -> Git 저장소, Build Type `Dockerfile`, Build Path/Context `server`.
+1. Dokploy에서 Application 생성 -> Git 저장소, Build Type `Dockerfile`, Build Path `/`(저장소 루트), Dockerfile Path `Dockerfile`. 웹 앱도 함께 빌드되므로 Watch Paths는 비워 둔다.
 2. Volume(Mount): `/pb/pb_data` (영속). 포트 8090.
 3. Domains: 도메인 연결 + HTTPS(Let's Encrypt), 컨테이너 포트 8090.
 4. 첫 실행 후 `https://<도메인>/_/`에서 관리자(superuser) 계정 생성.
@@ -53,6 +53,15 @@ OAuth로 새로 만들어진 계정은 `SetVerified(true)`로 verified 처리된
 6. Collections > users > Options > OAuth2: Google, Kakao 켜고 클라이언트 ID/시크릿 입력.
 7. 각 OAuth 클라이언트의 리다이렉트 URI: `https://<도메인>/api/oauth2-redirect`.
 8. 카카오 개발자 콘솔 > 동의항목에서 카카오계정(이메일)을 켠다(이메일 없으면 앱이 로그인을 막음).
+
+## 웹(PWA) 로그인: HttpOnly 쿠키
+
+`pb_hooks/web_session.pb.js`. 웹 클라이언트는 모든 요청에 `X-Session: cookie`를 붙인다.
+- 로그인·갱신 응답에서 토큰을 `pb_auth` 쿠키(HttpOnly, Secure, SameSite=Strict)로만 주고 본문 `token`은 비운다. 표시용 `pb_session=1` 쿠키로 새로 고침 때 세션 유무를 안다.
+- 요청에 Authorization이 없고 `X-Session: cookie`면 쿠키 토큰을 Authorization으로 옮긴다(PocketBase 토큰 읽기 미들웨어보다 먼저).
+- `POST /api/web/logout`이 두 쿠키를 지운다.
+- 데스크톱 앱은 헤더를 안 붙이므로 기존처럼 응답 본문의 토큰을 쓴다.
+- 훅 파일을 바꾸면 서버를 재시작해야 반영된다(배포 시 자동).
 
 ## 보안: 이메일 자동 연결
 

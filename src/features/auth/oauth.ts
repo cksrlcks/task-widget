@@ -1,5 +1,5 @@
 import { ClientResponseError } from "pocketbase"
-import { openExternal } from "@/features/shell/platform"
+import { isTauri, openExternal } from "@/features/shell/platform"
 import { pb } from "@/lib/pb"
 import { AuthNotice } from "./authErrors"
 
@@ -14,7 +14,8 @@ export function canUnlink(linked: Provider[], hasPassword: boolean): boolean {
 }
 
 export function assertEmail(meta: { email?: string } | undefined): void {
-  if (!meta?.email) throw new AuthNotice("카카오(또는 구글)에서 이메일 제공에 동의해 주세요.")
+  if (!meta?.email)
+    throw new AuthNotice("카카오(또는 구글)에서 이메일 제공에 동의해 주세요.")
 }
 
 // 카카오 기본 scope는 닉네임·프로필 사진까지 요청해 동의항목을 안 켜면 KOE205가 난다. 앱은 이메일만 쓴다
@@ -33,32 +34,41 @@ export const isOAuthCancelled = (err: unknown) =>
 async function oauth(c: Client, provider: Provider) {
   const timer = setTimeout(() => cancelOAuth(c), TIMEOUT_MS)
   try {
-    return await c
-      .collection("users")
-      .authWithOAuth2({
-        provider,
-        scopes: SCOPES[provider],
-        urlCallback: openExternal,
-        requestKey: KEY,
-      })
+    return await c.collection("users").authWithOAuth2({
+      provider,
+      scopes: SCOPES[provider],
+      // 웹은 SDK 기본(클릭 즉시 팝업)을 써야 팝업 차단에 안 걸린다
+      urlCallback: isTauri() ? openExternal : undefined,
+      requestKey: KEY,
+    })
   } finally {
     clearTimeout(timer)
   }
 }
 
 /** 로그인 안 된 상태. 이메일이 없으면 계정을 남기지 않고 막는다 */
-export async function signInWithProvider(provider: Provider, c: Client = pb): Promise<void> {
+export async function signInWithProvider(
+  provider: Provider,
+  c: Client = pb,
+): Promise<void> {
   const { record, meta } = await oauth(c, provider)
   if (meta?.email) return
   // 본인 레코드 삭제는 인증이 필요하므로 clear 전에 지운다
   // shortcut: 삭제 실패 시 이메일 없는 레코드가 남는다(로그인은 계속 막힘), 쌓이면 서버 정리 작업 추가
-  if (meta?.isNew === true) await c.collection("users").delete(record.id).catch(() => {})
+  if (meta?.isNew === true)
+    await c
+      .collection("users")
+      .delete(record.id)
+      .catch(() => {})
   c.authStore.clear()
   assertEmail(meta)
 }
 
 /** 로그인된 상태. PB는 현재 계정에 연결하지만, 이미 다른 계정 소유면 그 계정으로 로그인시킨다 */
-export async function linkProvider(provider: Provider, c: Client = pb): Promise<void> {
+export async function linkProvider(
+  provider: Provider,
+  c: Client = pb,
+): Promise<void> {
   const { token, record } = c.authStore
   if (!record) throw new AuthNotice("로그인이 필요합니다.")
   const res = await oauth(c, provider)
@@ -75,7 +85,10 @@ export async function listLinked(c: Client = pb): Promise<Provider[]> {
   return PROVIDERS.filter((p) => auths.some((a) => a.provider === p))
 }
 
-export async function unlinkProvider(provider: Provider, c: Client = pb): Promise<void> {
+export async function unlinkProvider(
+  provider: Provider,
+  c: Client = pb,
+): Promise<void> {
   const rec = c.authStore.record
   if (!rec) throw new AuthNotice("로그인이 필요합니다.")
   // authStore의 레코드는 오래됐을 수 있어 hasPassword는 새로 읽는다

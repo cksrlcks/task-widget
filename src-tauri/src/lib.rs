@@ -2,8 +2,7 @@ use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder,
-    WindowEvent,
+    AppHandle, Emitter, Manager, State, WindowEvent,
 };
 
 /// 화면 설정 중 Rust 쪽에서 쓰는 것. 프론트가 시작할 때와 바뀔 때 apply_window_prefs로 넘긴다
@@ -22,33 +21,6 @@ fn apply_window_prefs(
     state.lock().unwrap().close_to_tray = close_to_tray;
     let w = app.get_webview_window("widget").ok_or("widget window not found")?;
     w.set_always_on_top(always_on_top).map_err(|e| e.to_string())
-}
-
-fn show_settings(app: &AppHandle) -> tauri::Result<()> {
-    if let Some(w) = app.get_webview_window("settings") {
-        let _ = w.unminimize();
-        let _ = w.show();
-        return w.set_focus();
-    }
-    let built = WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("index.html#settings".into()))
-        .title("설정")
-        .inner_size(880.0, 732.0)
-        .decorations(true)
-        .build();
-    match built {
-        Ok(_) => Ok(()),
-        // 거의 동시에 두 번 열렸으면 먼저 만들어진 창을 앞으로
-        Err(e) => match app.get_webview_window("settings") {
-            Some(w) => w.set_focus(),
-            None => Err(e),
-        },
-    }
-}
-
-/// 윈도우에서 동기 커맨드로 창을 만들면 멈출 수 있어 async
-#[tauri::command]
-async fn open_settings(app: AppHandle) -> Result<(), String> {
-    show_settings(&app).map_err(|e| e.to_string())
 }
 
 fn show_widget(app: &AppHandle) {
@@ -102,8 +74,10 @@ pub fn run() {
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, e| match e.id.as_ref() {
                     "toggle" => toggle_widget(app),
+                    // 설정은 위젯 안의 화면이다: 위젯을 띄우고 설정 화면으로 바꾸게 알린다
                     "settings" => {
-                        let _ = show_settings(app);
+                        show_widget(app);
+                        let _ = app.emit_to("widget", "open-settings", ());
                     }
                     "quit" => app.exit(0),
                     _ => {}
@@ -121,7 +95,7 @@ pub fn run() {
                 .build(app)?;
             Ok(())
         })
-        // 위젯 창 닫기(Alt+F4): 트레이 설정이면 숨기고 아니면 종료. 설정 창은 그냥 닫힌다
+        // 위젯 창 닫기(Alt+F4): 트레이 설정이면 숨기고 아니면 종료
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() != "widget" {
@@ -135,7 +109,7 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![apply_window_prefs, open_settings])
+        .invoke_handler(tauri::generate_handler![apply_window_prefs])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -9,7 +9,6 @@ import {
 import { Toaster } from "sonner"
 import { isSessionLost } from "@/features/auth/authExpiry"
 import { startAuthSession } from "@/features/auth/useAuth"
-import { SettingsWindow } from "@/features/settings/SettingsWindow"
 import { getPrefs, initPrefs, setPrefs } from "@/features/settings/appPrefs"
 import { isTauri } from "@/features/shell/platform"
 import { initWindow } from "@/features/widget/windowPos"
@@ -26,14 +25,16 @@ const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError }),
   mutationCache: new MutationCache({ onError }),
 })
-const isSettings = location.hash === "#settings"
 
 // 브라우저 우클릭 메뉴(뒤로 가기·새로 고침 등)는 앱에 어울리지 않는다. 입력칸은 복사·붙여넣기용으로 남긴다
 if (!import.meta.env.DEV)
   document.addEventListener("contextmenu", (e) => {
-    if (!(e.target instanceof HTMLElement && e.target.closest("input, textarea"))) e.preventDefault()
+    if (!(
+      e.target instanceof HTMLElement && e.target.closest("input, textarea")
+    ))
+      e.preventDefault()
   })
-const isWidget = !isSettings && isTauri()
+const isWidget = isTauri()
 
 async function start() {
   let failure: unknown = null
@@ -42,9 +43,7 @@ async function start() {
   } catch (err) {
     failure = err
   }
-  // 설정 창은 테마만 따른다. 배율·창 속성은 위젯 창이 storage 이벤트로 적용한다
-  if (isSettings) initPrefs({ windowEffects: false })
-  else if (!isWidget) initPrefs()
+  if (!isWidget) initPrefs()
   else {
     // 투명 창: body는 비우고 App이 둥근 배경을 그린다
     document.body.classList.add("bg-transparent")
@@ -65,9 +64,11 @@ async function start() {
     uid = id
     queryClient.clear()
   })
-  if (isWidget) startAuthSession()
+  startAuthSession()
+  if (!isWidget && import.meta.env.PROD && "serviceWorker" in navigator)
+    void navigator.serviceWorker.register("/sw.js").catch(console.error)
 
-  return isSettings ? <SettingsWindow /> : <App />
+  return <App />
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)

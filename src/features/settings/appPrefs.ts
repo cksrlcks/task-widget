@@ -112,8 +112,6 @@ export function useAppPrefs(): AppPrefs {
 }
 
 // 설정 창은 테마만 따른다(배율·창 속성은 위젯 창의 몫). initPrefs에서 정한다
-let windowEffects = true
-
 const darkQuery =
   typeof matchMedia === "undefined"
     ? null
@@ -125,7 +123,7 @@ function apply(p: AppPrefs) {
     "dark",
     p.theme === "dark" || (p.theme === "system" && !!darkQuery?.matches),
   )
-  if (!isTauri() || !windowEffects) return
+  if (!isTauri()) return
   void import("@tauri-apps/api/webview")
     .then(({ getCurrentWebview }) => getCurrentWebview().setZoom(p.zoom))
     .catch(() => {})
@@ -141,17 +139,9 @@ function apply(p: AppPrefs) {
 }
 
 /** 앱 시작 시 한 번. 시스템 테마가 바뀌면 따라간다 */
-export function initPrefs({ windowEffects: effects = true } = {}) {
-  windowEffects = effects
+export function initPrefs() {
   apply(current)
   darkQuery?.addEventListener("change", () => {
     if (current.theme === "system") apply(current)
-  })
-  // 다른 창에서 바꾼 설정을 바로 따른다
-  window.addEventListener("storage", (e) => {
-    if (e.key !== KEY) return
-    current = load()
-    apply(current)
-    listeners.forEach((l) => l())
   })
 }

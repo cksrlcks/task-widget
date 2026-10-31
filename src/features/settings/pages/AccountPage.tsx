@@ -3,17 +3,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { authErrorMessage } from "@/features/auth/authErrors"
 import {
-  canUnlink,
   cancelOAuth,
+  canUnlink,
   isOAuthCancelled,
   linkProvider,
   listLinked,
   unlinkProvider,
   type Provider,
 } from "@/features/auth/oauth"
-import { broadcastAuth, useAuth } from "@/features/auth/useAuth"
+import { useAuth } from "@/features/auth/useAuth"
 import { pb } from "@/lib/pb"
-import { Pill, Row, Section, btnDanger, btnOutline } from "../settingsUi"
+import { btnDanger, btnOutline, Pill, Row, Section } from "../settingsUi"
 
 const PROVIDERS: { id: Provider; label: string }[] = [
   { id: "google", label: "구글" },
@@ -41,7 +41,6 @@ export function AccountPage() {
     setLinking(p)
     try {
       await linkProvider(p)
-      void broadcastAuth().catch(console.error)
     } catch (err) {
       if (!isOAuthCancelled(err)) toast.error(authErrorMessage(err, "link"))
     } finally {
@@ -64,17 +63,6 @@ export function AccountPage() {
         err instanceof Error ? err.message : "메일을 보내지 못했습니다",
       ),
   })
-
-  async function signOut() {
-    logout()
-    try {
-      await broadcastAuth().catch(console.error)
-      const { getCurrentWindow } = await import("@tauri-apps/api/window")
-      await getCurrentWindow().close()
-    } catch {
-      // Tauri 밖(브라우저 미리보기)에서는 닫을 창이 없다
-    }
-  }
 
   return (
     <>
@@ -144,11 +132,7 @@ export function AccountPage() {
           title="로그아웃"
           desc="로그아웃하면 다시 들어올 때 로그인이 필요합니다"
         >
-          <button
-            type="button"
-            onClick={() => void signOut()}
-            className={btnDanger}
-          >
+          <button type="button" onClick={logout} className={btnDanger}>
             로그아웃
           </button>
         </Row>

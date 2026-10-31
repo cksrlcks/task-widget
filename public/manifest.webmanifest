@@ -1,0 +1,16 @@
+{
+  "name": "Task Widget",
+  "short_name": "Task Widget",
+  "description": "할 일, 일정, 뽀모도로",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#eeeeee",
+  "theme_color": "#0a63c9",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
