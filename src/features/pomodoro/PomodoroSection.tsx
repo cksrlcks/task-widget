@@ -5,6 +5,7 @@ import {
   IconRefresh,
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
+import { WidgetCard } from "@/features/widget/WidgetCard"
 import { cn } from "@/lib/utils"
 import { usePomodoro } from "./usePomodoro"
 
@@ -24,10 +25,12 @@ export function PomodoroSection({ className }: Props) {
   const running = status === "running"
 
   return (
-    <section className={cn("flex flex-col items-center gap-2 p-3", className)}>
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="text-5xl font-semibold tabular-nums">{mmss}</div>
-      <div className="flex gap-2">
+    <WidgetCard className={cn("items-center gap-1 px-3 pt-3 pb-3.5", className)}>
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="text-[44px] leading-none font-semibold tracking-tight tabular-nums">
+        {mmss}
+      </div>
+      <div className="mt-2 flex gap-1.5">
         {status === "done" ? (
           <Button
             onClick={() => {
@@ -53,6 +56,6 @@ export function PomodoroSection({ className }: Props) {
           <IconPlayerSkipForward />
         </Button>
       </div>
-    </section>
+    </WidgetCard>
   )
 }

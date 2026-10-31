@@ -1,10 +1,11 @@
-import { IconTrash } from "@tabler/icons-react"
+import { IconListCheck, IconPlus, IconTrash } from "@tabler/icons-react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { WidgetCard } from "@/features/widget/WidgetCard"
 import { useConfirm } from "@/hooks/use-confirm"
 import { cn } from "@/lib/utils"
 import { useAddTodo, useClearDone, useDeleteTodo, useTodos, useUpdateTodo } from "./queries"
@@ -38,7 +39,7 @@ function TodoRow({ todo }: { todo: Todo }) {
   }
 
   return (
-    <li className="group flex items-center gap-2 py-1">
+    <li className="group flex min-h-8 items-center gap-2.5 rounded-md px-2 hover:bg-muted/70">
       <Checkbox
         aria-label={`${todo.title} 완료`}
         checked={todo.done}
@@ -106,9 +107,42 @@ export function TodoSection({ className }: Props) {
     clear.mutate(data.filter((t) => t.done).map((t) => t.id), { onError: fail })
   }
 
+  const left = data.filter((t) => !t.done).length
+
   return (
-    <section className={cn("flex min-h-0 flex-col gap-2 p-3", className)}>
-      <ul className="min-h-0 flex-1 overflow-y-auto">
+    <WidgetCard
+      title={data.length ? `할 일 · ${left}` : "할 일"}
+      className={cn("min-h-0", className)}
+      action={
+        hasDone && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label="완료 항목 지우기"
+            title="완료 항목 지우기"
+            onClick={clearDone}
+          >
+            <IconListCheck />
+          </Button>
+        )
+      }
+    >
+      <div className="relative px-2">
+        <IconPlus
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 left-4.5 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          aria-label="할 일 추가"
+          value={draft}
+          maxLength={500}
+          placeholder="할 일 추가"
+          className="pl-8"
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && submit()}
+        />
+      </div>
+      <ul className="min-h-0 flex-1 overflow-y-auto px-1 py-1.5">
         {isLoading || isError || data.length === 0 ? (
           <li className="py-4 text-center text-sm text-muted-foreground">
             {isLoading ? "불러오는 중..." : isError ? "할 일을 불러오지 못했습니다." : "할 일이 없어요"}
@@ -117,18 +151,6 @@ export function TodoSection({ className }: Props) {
           data.map((t) => <TodoRow key={t.id} todo={t} />)
         )}
       </ul>
-      <Input
-        value={draft}
-        maxLength={500}
-        placeholder="+ 할 일 추가"
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && submit()}
-      />
-      {hasDone && (
-        <Button variant="ghost" size="sm" onClick={clearDone}>
-          완료 항목 지우기
-        </Button>
-      )}
-    </section>
+    </WidgetCard>
   )
 }

@@ -5,36 +5,48 @@ import { useAppPrefs } from "@/features/settings/appPrefs"
 import { useUpdateCheck } from "@/features/update/useUpdateCheck"
 import { TopBar } from "@/features/widget/TopBar"
 import { Widget } from "@/features/widget/Widget"
+import { WidgetCard } from "@/features/widget/WidgetCard"
 
 function Body() {
   const { status } = useAuth()
   if (status === "loading")
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-      </div>
+      <WidgetCard className="items-center p-6">
+        <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+      </WidgetCard>
     )
   if (status === "offline")
     return (
-      <div className="flex flex-col items-center gap-3 p-6 text-sm">
+      <WidgetCard className="items-center gap-3 p-6 text-sm">
         <p>서버에 연결할 수 없습니다.</p>
         <Button onClick={runBoot}>다시 시도</Button>
-      </div>
+      </WidgetCard>
     )
-  return status === "authed" ? <Widget /> : <LoginScreen />
+  if (status !== "authed")
+    return (
+      <WidgetCard className="min-h-0 overflow-y-auto">
+        <LoginScreen />
+      </WidgetCard>
+    )
+  return <Widget />
 }
 
-/** 투명 창 위에 둥근 배경을 직접 그린다. 투명도는 CSS opacity(글자가 흐려지지 않는다) */
+/** 투명 창. 카드만 떠 있고, 마우스를 올리면 카드 뒤로 이어진 배경이 나타난다 */
 export default function App() {
   useUpdateCheck()
-  const { opacity } = useAppPrefs()
+  const drag = useAppPrefs().anchor === "free" || undefined
   return (
-    <div
-      className="flex h-screen flex-col overflow-hidden rounded-lg border bg-background"
-      style={{ opacity }}
-    >
+    <div className="group/widget relative h-screen select-none">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-xl border border-black/[.06] bg-[#eeeeee]/95 opacity-0 transition-opacity duration-150 group-hover/widget:opacity-100 dark:border-white/[.08] dark:bg-[#1c1c1c]/95"
+      />
       <TopBar />
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+      {/* 카드 사이 틈과 둘레는 자유 이동일 때 창을 끄는 손잡이 */}
+      <div
+        data-tauri-drag-region={drag}
+        className="relative flex h-full flex-col gap-2 overflow-y-auto p-2 [&>:first-child_[data-slot=card-header]]:pr-16"
+      >
         <Body />
       </div>
     </div>

@@ -2,49 +2,26 @@ use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, PhysicalPosition, PhysicalSize, State, WebviewUrl, WebviewWindowBuilder,
+    AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder,
     WindowEvent,
 };
 
 /// 화면 설정 중 Rust 쪽에서 쓰는 것. 프론트가 시작할 때와 바뀔 때 apply_window_prefs로 넘긴다
 struct Prefs {
     close_to_tray: bool,
-    /// 마지막으로 적용한 너비(CSS px). 바뀔 때만 리사이즈해 직접 조절한 크기를 지키지 않게 되는 걸 막는다
-    width: Option<u32>,
 }
 
-/// 투명도(opacity)는 웹뷰 루트 CSS로 처리해 여기서는 쓰지 않는다(글자가 흐려지지 않게)
+/// 위치·크기는 프론트(windowPos.ts)가 맡는다
 #[tauri::command]
 fn apply_window_prefs(
     app: AppHandle,
     state: State<Mutex<Prefs>>,
     always_on_top: bool,
-    opacity: f64,
-    width: u32,
     close_to_tray: bool,
 ) -> Result<(), String> {
-    let _ = opacity;
-    let width_changed = {
-        let mut st = state.lock().unwrap();
-        st.close_to_tray = close_to_tray;
-        st.width.replace(width) != Some(width)
-    };
+    state.lock().unwrap().close_to_tray = close_to_tray;
     let w = app.get_webview_window("widget").ok_or("widget window not found")?;
-    w.set_always_on_top(always_on_top).map_err(|e| e.to_string())?;
-    if !width_changed {
-        return Ok(());
-    }
-    // 물리 픽셀로 계산. 너비가 바뀌면 오른쪽 끝을 고정한다
-    let scale = w.scale_factor().map_err(|e| e.to_string())?;
-    let pos = w.outer_position().map_err(|e| e.to_string())?;
-    let size = w.outer_size().map_err(|e| e.to_string())?;
-    let new_w = (width as f64 * scale).round() as u32;
-    if new_w != size.width {
-        let x = pos.x + size.width as i32 - new_w as i32;
-        w.set_position(PhysicalPosition::new(x, pos.y)).map_err(|e| e.to_string())?;
-        w.set_size(PhysicalSize::new(new_w, size.height)).map_err(|e| e.to_string())?;
-    }
-    Ok(())
+    w.set_always_on_top(always_on_top).map_err(|e| e.to_string())
 }
 
 fn show_settings(app: &AppHandle) -> tauri::Result<()> {
@@ -106,7 +83,7 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
         ))
-        .manage(Mutex::new(Prefs { close_to_tray: true, width: None }))
+        .manage(Mutex::new(Prefs { close_to_tray: true }))
         .setup(|app| {
             let item = |id: &str, text: &str| MenuItem::with_id(app, id, text, true, None::<&str>);
             let menu = Menu::with_items(

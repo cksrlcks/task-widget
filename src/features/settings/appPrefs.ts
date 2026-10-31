@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react"
 import { isTauri } from "@/features/shell/platform"
+import type { Anchor } from "@/features/widget/windowPos"
 
 export type Theme = "system" | "light" | "dark"
 
@@ -7,11 +8,9 @@ export type AppPrefs = {
   theme: Theme
   /** 화면 배율(1 = 100%) */
   zoom: 0.9 | 1 | 1.1 | 1.25
-  /** 위젯 너비(px) */
-  width: 400 | 500 | 600
+  /** 위젯 위치: 자유 이동 또는 오른쪽 위/아래 고정. 크기는 창 가장자리를 끌어 조절한다 */
+  anchor: Anchor
   alwaysOnTop: boolean
-  /** 창 투명도 0.7~1 */
-  opacity: number
   /** 창 닫기 = 트레이로 숨기기. 끄면 앱 종료 */
   closeToTray: boolean
   showPomodoro: boolean
@@ -28,9 +27,8 @@ const KEY = "taskwidget.prefs"
 export const DEFAULTS: AppPrefs = {
   theme: "system",
   zoom: 1,
-  width: 500,
+  anchor: "top-right",
   alwaysOnTop: true,
-  opacity: 1,
   closeToTray: true,
   showPomodoro: true,
   showTodos: true,
@@ -43,7 +41,7 @@ export const DEFAULTS: AppPrefs = {
 }
 const THEMES: Theme[] = ["system", "light", "dark"]
 const ZOOMS = [0.9, 1, 1.1, 1.25]
-const WIDTHS = [400, 500, 600]
+const ANCHORS: Anchor[] = ["free", "top-right", "bottom-right"]
 
 const num = (v: unknown, min: number, max: number, def: number) =>
   typeof v === "number" && Number.isFinite(v)
@@ -67,9 +65,8 @@ export function loadPrefs(raw: string | null): AppPrefs {
   return {
     theme: oneOf(s.theme, THEMES, d.theme),
     zoom: oneOf(s.zoom, ZOOMS, d.zoom) as AppPrefs["zoom"],
-    width: oneOf(s.width, WIDTHS, d.width) as AppPrefs["width"],
+    anchor: oneOf(s.anchor, ANCHORS, d.anchor),
     alwaysOnTop: bool(s.alwaysOnTop, d.alwaysOnTop),
-    opacity: num(s.opacity, 0.7, 1, d.opacity),
     closeToTray: bool(s.closeToTray, d.closeToTray),
     showPomodoro: bool(s.showPomodoro, d.showPomodoro),
     showTodos: bool(s.showTodos, d.showTodos),
@@ -132,17 +129,15 @@ function apply(p: AppPrefs) {
   void import("@tauri-apps/api/webview")
     .then(({ getCurrentWebview }) => getCurrentWebview().setZoom(p.zoom))
     .catch(() => {})
-  // apply_window_prefs는 Task 9에서 생긴다. 그 전까지는 조용히 무시된다
   void import("@tauri-apps/api/core")
     .then(({ invoke }) =>
       invoke("apply_window_prefs", {
         alwaysOnTop: p.alwaysOnTop,
-        opacity: p.opacity,
-        width: p.width,
         closeToTray: p.closeToTray,
       }),
     )
     .catch(() => {})
+  void import("@/features/widget/windowPos").then((m) => m.snapWindow())
 }
 
 /** 앱 시작 시 한 번. 시스템 테마가 바뀌면 따라간다 */

@@ -23,31 +23,19 @@ const hide = () => {
     .catch(fail)
 }
 
-/** 끌어서 창 이동(data-tauri-drag-region). 버튼은 드래그 영역에서 빠진다 */
+/** 위젯에 마우스를 올리면 오른쪽 위에 나타나는 설정·숨기기 버튼 */
 export function TopBar({ className }: Props) {
   return (
     <div
-      data-tauri-drag-region
       className={cn(
-        "flex h-8 shrink-0 items-center gap-1 px-3 select-none",
+        "pointer-events-none absolute top-3 right-3 z-10 flex gap-0.5 rounded-md border border-black/[.06] bg-card p-0.5 opacity-0 shadow-sm transition-opacity duration-150 group-hover/widget:pointer-events-auto group-hover/widget:opacity-100 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100 dark:border-white/[.08]",
         className,
       )}
     >
-      <span
-        data-tauri-drag-region
-        className="flex-1 text-xs font-medium text-muted-foreground"
-      >
-        Task Widget
-      </span>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="설정"
-        onClick={openSettings}
-      >
+      <Button variant="ghost" size="icon-xs" aria-label="설정" title="설정" onClick={openSettings}>
         <IconSettings />
       </Button>
-      <Button variant="ghost" size="icon-sm" aria-label="숨기기" onClick={hide}>
+      <Button variant="ghost" size="icon-xs" aria-label="숨기기" title="숨기기" onClick={hide}>
         <IconEyeOff />
       </Button>
     </div>

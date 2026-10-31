@@ -1,6 +1,7 @@
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { WidgetCard } from "@/features/widget/WidgetCard"
 import { cn } from "@/lib/utils"
 import { DayPanel } from "./DayPanel"
 import { monthGrid, shiftMonth, toYmd } from "./monthGrid"
@@ -39,22 +40,44 @@ export function CalendarSection({ className }: Props) {
     setSelected(null)
   }
 
+  const thisMonth = today.slice(0, 7)
+
   return (
-    <section className={cn("flex flex-col gap-2 p-3", className)}>
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon-xs" aria-label="이전 달" onClick={() => move(-1)}>
-          <IconChevronLeft />
-        </Button>
-        <span className="text-sm font-medium">
-          {y}년 {m}월
-        </span>
-        <Button variant="ghost" size="icon-xs" aria-label="다음 달" onClick={() => move(1)}>
-          <IconChevronRight />
-        </Button>
-      </div>
-      <div className="grid grid-cols-7 gap-y-0.5 text-center text-xs">
-        {DOW.map((d) => (
-          <span key={d} className="text-muted-foreground">
+    <WidgetCard
+      className={className}
+      title={`${y}년 ${m}월`}
+      action={
+        <>
+          {ym !== thisMonth && (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                setYm(thisMonth)
+                setSelected(today)
+              }}
+            >
+              오늘
+            </Button>
+          )}
+          <Button variant="ghost" size="icon-xs" aria-label="이전 달" title="이전 달" onClick={() => move(-1)}>
+            <IconChevronLeft />
+          </Button>
+          <Button variant="ghost" size="icon-xs" aria-label="다음 달" title="다음 달" onClick={() => move(1)}>
+            <IconChevronRight />
+          </Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-7 px-1.5 pb-1.5 text-center text-xs">
+        {DOW.map((d, i) => (
+          <span
+            key={d}
+            className={cn(
+              "pb-1 text-2xs text-muted-foreground",
+              i === 0 && "text-destructive/70",
+            )}
+          >
             {d}
           </span>
         ))}
@@ -70,26 +93,36 @@ export function CalendarSection({ className }: Props) {
               if (!inMonth) setYm(ymd.slice(0, 7))
               setSelected(inMonth && selected === ymd ? null : ymd)
             }}
-            className={cn(
-              "relative h-7 rounded-md outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40",
-              !inMonth && "text-muted-foreground/50",
-              ymd === today && "font-bold text-primary ring-1 ring-primary",
-              selected === ymd && "bg-accent",
-            )}
+            className="group/day flex h-8 items-center justify-center outline-none"
           >
-            {Number(ymd.slice(8))}
-            {withEvents.has(ymd) && (
-              <span className="absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary" />
-            )}
+            <span
+              className={cn(
+                "relative flex size-7 items-center justify-center rounded-full tabular-nums group-hover/day:bg-muted group-focus-visible/day:ring-2 group-focus-visible/day:ring-primary/40",
+                !inMonth && "text-muted-foreground/50",
+                selected === ymd && "bg-accent ring-1 ring-primary group-hover/day:bg-accent",
+                ymd === today &&
+                  "bg-primary font-semibold text-primary-foreground group-hover/day:bg-primary-hover",
+              )}
+            >
+              {Number(ymd.slice(8))}
+              {withEvents.has(ymd) && (
+                <span
+                  className={cn(
+                    "absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full",
+                    ymd === today ? "bg-primary-foreground" : "bg-primary",
+                  )}
+                />
+              )}
+            </span>
           </button>
         ))}
       </div>
       {(isLoading || isError) && (
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="pb-2 text-center text-xs text-muted-foreground">
           {isLoading ? "불러오는 중..." : "일정을 불러오지 못했습니다."}
         </p>
       )}
       {selected && <DayPanel ymd={selected} events={data} />}
-    </section>
+    </WidgetCard>
   )
 }

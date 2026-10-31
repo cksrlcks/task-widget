@@ -27,6 +27,12 @@ const queryClient = new QueryClient({
   mutationCache: new MutationCache({ onError }),
 })
 const isSettings = location.hash === "#settings"
+
+// 브라우저 우클릭 메뉴(뒤로 가기·새로 고침 등)는 앱에 어울리지 않는다. 입력칸은 복사·붙여넣기용으로 남긴다
+if (!import.meta.env.DEV)
+  document.addEventListener("contextmenu", (e) => {
+    if (!(e.target instanceof HTMLElement && e.target.closest("input, textarea"))) e.preventDefault()
+  })
 const isWidget = !isSettings && isTauri()
 
 async function start() {
@@ -42,8 +48,8 @@ async function start() {
   else {
     // 투명 창: body는 비우고 App이 둥근 배경을 그린다
     document.body.classList.add("bg-transparent")
-    // 위치를 잡고 띄운 뒤 창 속성(너비·항상 위)을 적용해야 오른쪽 끝 기준 계산이 맞는다
-    await initWindow(getPrefs().width).catch(console.error)
+    // 위치를 잡고 띄운 뒤 창 속성(항상 위)을 적용한다
+    await initWindow(() => getPrefs().anchor).catch(console.error)
     initPrefs()
   }
   if (failure) throw failure

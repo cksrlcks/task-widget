@@ -295,3 +295,29 @@
 @utility bg-checker {
   background: repeating-conic-gradient(#e5e5e5 0 25%, #fff 0 50%) 0 0 / 16px 16px;
 }
+
+/* 네이티브 앱처럼: 글자 선택·텍스트 커서는 입력칸에서만, 얇은 스크롤바 */
+@layer base {
+  body {
+    cursor: default;
+    user-select: none;
+    overscroll-behavior: none;
+  }
+  input,
+  textarea,
+  [contenteditable="true"] {
+    user-select: text;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--muted-foreground) 45%, transparent) padding-box;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

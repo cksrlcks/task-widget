@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { isTauri } from "@/features/shell/platform"
+import type { Anchor } from "@/features/widget/windowPos"
 import { setPrefs, useAppPrefs, type Theme } from "../appPrefs"
 import { Row, Section, Segmented } from "../settingsUi"
 
@@ -13,10 +14,11 @@ const ZOOMS = ([0.9, 1, 1.1, 1.25] as const).map((v) => ({
   value: v,
   label: `${Math.round(v * 100)}%`,
 }))
-const WIDTHS = ([400, 500, 600] as const).map((v) => ({
-  value: v,
-  label: `${v}px`,
-}))
+const ANCHORS: { value: Anchor; label: string }[] = [
+  { value: "top-right", label: "오른쪽 위" },
+  { value: "bottom-right", label: "오른쪽 아래" },
+  { value: "free", label: "자유롭게" },
+]
 
 export function GeneralPage() {
   // null = 아직 모름(확인 중이거나 설치된 앱이 아님)
@@ -63,24 +65,19 @@ export function GeneralPage() {
             onChange={(zoom) => setPrefs({ zoom })}
           />
         </Row>
-        <Row title="위젯 너비">
+        <Row
+          title="위젯 위치"
+          desc={
+            prefs.anchor === "free"
+              ? "상단을 끌어 옮길 수 있습니다. 크기는 가장자리를 끌어 조절합니다"
+              : "화면 모서리에서 20px 띄워 고정합니다. 크기는 가장자리를 끌어 조절합니다"
+          }
+        >
           <Segmented
-            label="위젯 너비"
-            value={prefs.width}
-            options={WIDTHS}
-            onChange={(width) => setPrefs({ width })}
-          />
-        </Row>
-        <Row title="위젯 투명도" desc={`${Math.round(prefs.opacity * 100)}%`}>
-          <input
-            type="range"
-            aria-label="위젯 투명도"
-            min={0.7}
-            max={1}
-            step={0.1}
-            value={prefs.opacity}
-            onChange={(e) => setPrefs({ opacity: Number(e.target.value) })}
-            className="w-40"
+            label="위젯 위치"
+            value={prefs.anchor}
+            options={ANCHORS}
+            onChange={(anchor) => setPrefs({ anchor })}
           />
         </Row>
       </Section>
