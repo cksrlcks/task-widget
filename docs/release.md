@@ -24,6 +24,14 @@
 3. GitHub Actions의 Release 워크플로가 끝나면 Releases에 설치 파일(`.exe`/`.msi`), `.sig`, `latest.json`이 올라온다. 확인한다.
 4. 설치된 이전 버전 앱은 시작 30초 뒤 새 버전을 알리고, "업데이트"를 누르면 설치 후 재시작한다.
 
+## macOS 안내 (Apple 공증 없음)
+
+릴리스 워크플로는 Intel·Apple Silicon 공용(universal) `.dmg`와 업데이트용 `.app.tar.gz`를 만든다. Apple 개발자 서명·공증이 없어서 인터넷에서 받은 앱을 처음 열면 "손상되었기 때문에 열 수 없습니다"가 뜬다. 사용자 안내:
+
+> 앱을 응용 프로그램 폴더로 옮긴 뒤 터미널에서 `xattr -cr "/Applications/Task Widget.app"`을 한 번 실행하세요.
+
+공증하려면 Apple Developer Program(연 $99) 가입 후 `APPLE_CERTIFICATE` 등 시크릿을 추가해야 한다.
+
 ## SmartScreen 안내 (코드 서명 없음)
 
 코드 서명 인증서 없이 배포하므로 처음 실행할 때 "Windows의 PC 보호" 화면이 뜰 수 있다. 사용자 안내 문구:
