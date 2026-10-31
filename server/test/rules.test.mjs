@@ -77,3 +77,38 @@ test("events.date rejects non YYYY-MM-DD", async () => {
   await assert.rejects(pbA.collection("events").create({ title: "x", date: "2026-1-1", user: A.id }))
   await pbA.collection("events").create({ title: "ok", date: "2026-01-01", time: "", user: A.id })
 })
+
+test("user B cannot view, update or delete user A's todo", async () => {
+  const t = await pbA.collection("todos").create({ title: "secret", user: A.id })
+  await assert.rejects(pbB.collection("todos").getOne(t.id))
+  await assert.rejects(pbB.collection("todos").update(t.id, { title: "hacked" }))
+  await assert.rejects(pbB.collection("todos").delete(t.id))
+  assert.equal((await admin.collection("todos").getOne(t.id)).title, "secret")
+})
+
+test("user B cannot view user A's event", async () => {
+  const e = await pbA.collection("events").create({ title: "e", date: "2026-02-02", user: A.id })
+  await assert.rejects(pbB.collection("events").getOne(e.id))
+})
+
+test("owner cannot move a record to another user via update", async () => {
+  const t = await pbA.collection("todos").create({ title: "mine", user: A.id })
+  await assert.rejects(pbA.collection("todos").update(t.id, { user: B.id }))
+  const e = await pbA.collection("events").create({ title: "e", date: "2026-02-02", user: A.id })
+  await assert.rejects(pbA.collection("events").update(e.id, { user: B.id }))
+  await pbA.collection("todos").update(t.id, { done: true })
+  assert.equal((await admin.collection("todos").getOne(t.id)).user, A.id)
+})
+
+test("users: B cannot view A; A cannot self-verify or change email; hasPassword is settable", async () => {
+  await assert.rejects(pbB.collection("users").getOne(A.id))
+  assert.equal((await pbB.collection("users").getFullList()).length, 1)
+  // PocketBase itself rejects these for non-superusers (verified/email are protected)
+  await assert.rejects(pbA.collection("users").update(A.id, { verified: false }))
+  await assert.rejects(pbA.collection("users").update(A.id, { email: `x-${uid}@test.local` }))
+  const after = await admin.collection("users").getOne(A.id)
+  assert.equal(after.verified, true)
+  assert.equal(after.email, A.email)
+  await pbA.collection("users").update(A.id, { hasPassword: false })
+  assert.equal((await admin.collection("users").getOne(A.id)).hasPassword, false)
+})

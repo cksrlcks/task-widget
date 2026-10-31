@@ -4,6 +4,9 @@ migrate((app) => {
   users.passwordAuth.enabled = true
   users.oauth2.enabled = true
   users.authRule = "verified = true"
+  users.listRule = "id = @request.auth.id"
+  users.viewRule = "id = @request.auth.id"
+  users.updateRule = "id = @request.auth.id"
   users.deleteRule = "id = @request.auth.id"
   users.fields.add(new BoolField({ name: "hasPassword" }))
   app.save(users)
@@ -16,7 +19,7 @@ migrate((app) => {
       name,
       listRule: own,
       viewRule: own,
-      updateRule: own,
+      updateRule: own + ' && (@request.body.user:isset = false || @request.body.user = @request.auth.id)',
       deleteRule: own,
       createRule: create,
       fields: [
