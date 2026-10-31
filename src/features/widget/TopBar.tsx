@@ -7,7 +7,8 @@ import {
   IconSettings,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { useDesktopDownload } from "@/features/download/useDesktopDownload"
 import { setPrefs, useAppPrefs } from "@/features/settings/appPrefs"
 import { isTauri } from "@/features/shell/platform"
 import { cn } from "@/lib/utils"
@@ -42,6 +43,7 @@ export function TopBar({
   update,
   className,
 }: Props) {
+  const download = useDesktopDownload()
   const { alwaysOnTop } = useAppPrefs()
   return (
     <header
@@ -73,6 +75,15 @@ export function TopBar({
         </h1>
       )}
       <span className="flex-1" />
+      {download && !settings && (
+        <a
+          href={download.url}
+          className={buttonVariants({ variant: "outline", size: "xs" })}
+        >
+          <IconDownload />
+          {download.label}
+        </a>
+      )}
       {update && (
         <Button
           variant="outline"

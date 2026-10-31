@@ -4,6 +4,7 @@ import { IconLock, IconMail } from "@tabler/icons-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
+import { useDesktopDownload } from "@/features/download/useDesktopDownload"
 import { pb } from "@/lib/pb"
 import { authErrorMessage } from "./authErrors"
 import {
@@ -60,6 +61,7 @@ export function LoginScreen() {
     }
   }
 
+  const download = useDesktopDownload()
   const back = () => setMode("login")
   if (mode === "signup") return <SignupForm onBack={back} />
   if (mode === "reset") return <ResetForm onBack={back} />
@@ -137,6 +139,14 @@ export function LoginScreen() {
           회원가입
         </button>
       </p>
+      {download && (
+        <a
+          href={download.url}
+          className="-mt-1 self-center text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          {download.label} — 바탕화면 위젯으로 쓰기
+        </a>
+      )}
     </div>
   )
 }
