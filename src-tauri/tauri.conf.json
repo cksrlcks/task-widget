@@ -48,7 +48,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQ3MzUyMTdBMEQ5OUJERTEKUldUaHZaa05laUUxMS9Lc25hTGliNFIwMTVxZTJkMU5BbmQ2akxQcHQwdEZyU1hnejBLNXBBaCsK",
       "endpoints": [
-        "https://github.com/OWNER/REPO/releases/latest/download/latest.json"
+        "https://github.com/cksrlcks/task-widget/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

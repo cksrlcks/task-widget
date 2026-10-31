@@ -2,7 +2,7 @@
 
 ## 최초 1회 설정
 
-1. **GitHub 주소 치환** — `src-tauri/tauri.conf.json`의 `plugins.updater.endpoints`에 있는 `OWNER/REPO`를 실제 `소유자/저장소`로 바꾼다. 최종: `https://github.com/<소유자>/<저장소>/releases/latest/download/latest.json`. release.yml은 저장소를 자동으로 쓰므로 바꿀 곳이 없다.
+1. **GitHub 주소** — `src-tauri/tauri.conf.json`의 `plugins.updater.endpoints`는 `https://github.com/cksrlcks/task-widget/releases/latest/download/latest.json`으로 설정돼 있다. 저장소를 옮기면 이 주소도 바꾼다. release.yml은 저장소를 자동으로 쓰므로 바꿀 곳이 없다.
 2. **서명 키** — `~/.tauri/task-widget.key`(비밀키, 비밀번호 없음)와 `.pub`가 이미 생성돼 있다. 공개키는 `tauri.conf.json`에 들어 있다.
    - 비밀키는 저장소에 절대 커밋하지 않는다. 키를 잃어버리면 기존 설치본은 자동 업데이트를 못 받는다(백업할 것).
    - GitHub 저장소 → Settings → Secrets and variables → Actions에 추가:
