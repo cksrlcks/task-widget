@@ -11,7 +11,7 @@ import {
   unlinkProvider,
   type Provider,
 } from "@/features/auth/oauth"
-import { useAuth } from "@/features/auth/useAuth"
+import { broadcastAuth, useAuth } from "@/features/auth/useAuth"
 import { pb } from "@/lib/pb"
 import { Pill, Row, Section, btnDanger, btnOutline } from "../settingsUi"
 
@@ -41,6 +41,7 @@ export function AccountPage() {
     setLinking(p)
     try {
       await linkProvider(p)
+      void broadcastAuth().catch(console.error)
     } catch (err) {
       if (!isOAuthCancelled(err)) toast.error(authErrorMessage(err, "link"))
     } finally {
@@ -67,6 +68,7 @@ export function AccountPage() {
   async function signOut() {
     logout()
     try {
+      await broadcastAuth().catch(console.error)
       const { getCurrentWindow } = await import("@tauri-apps/api/window")
       await getCurrentWindow().close()
     } catch {

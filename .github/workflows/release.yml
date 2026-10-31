@@ -1,5 +1,5 @@
 # v* 태그를 푸시하면 Windows 설치 파일을 빌드·서명해 GitHub Release로 올린다.
-# 필요한 시크릿: TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD, VITE_PB_URL (docs/release.md 참고)
+# 필요한 시크릿: TAURI_SIGNING_PRIVATE_KEY, VITE_PB_URL. TAURI_SIGNING_PRIVATE_KEY_PASSWORD는 키에 비밀번호가 있을 때만(없으면 빈 문자열) (docs/release.md 참고)
 name: Release
 
 on:

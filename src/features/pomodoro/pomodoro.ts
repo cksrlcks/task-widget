@@ -59,3 +59,10 @@ export function next(s: PomoState, d: Durations): PomoState {
     return idle(s.round >= d.longBreakEvery ? "long" : "short", s.round, d)
   return idle("focus", s.phase === "long" ? 1 : s.round + 1, d)
 }
+
+/** 아직 시작하지 않은 대기 단계만 바뀐 시간을 바로 따른다 */
+export function syncIdle(s: PomoState, d: Durations): PomoState {
+  if (s.status !== "idle" || s.pausedLeftMs != null) return s
+  const durationMs = phaseMs(s.phase, d)
+  return durationMs === s.durationMs ? s : { ...s, durationMs }
+}

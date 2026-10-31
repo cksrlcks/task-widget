@@ -7,9 +7,9 @@
    - 비밀키는 저장소에 절대 커밋하지 않는다. 키를 잃어버리면 기존 설치본은 자동 업데이트를 못 받는다(백업할 것).
    - GitHub 저장소 → Settings → Secrets and variables → Actions에 추가:
      - `TAURI_SIGNING_PRIVATE_KEY`: `task-widget.key` 파일 내용 전체
-     - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: 빈 값
+     - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: **추가하지 않는다.** GitHub는 빈 값 시크릿을 저장할 수 없다. 없는 시크릿은 워크플로에서 빈 문자열이 되므로 비밀번호 없는 키에 그대로 맞는다.
      - `VITE_PB_URL`: 배포한 PocketBase 주소
-   - 비밀번호를 걸고 싶으면 `npx tauri signer generate -w ~/.tauri/task-widget.key`로 다시 만들고, 새 공개키를 `tauri.conf.json`에 넣고, 비밀번호를 위 시크릿에 넣는다. 공개키가 바뀌면 이미 설치된 앱은 업데이트할 수 없다(재설치 필요).
+   - 비밀번호를 걸고 싶으면 `npx tauri signer generate -w ~/.tauri/task-widget.key`로 다시 만들고, 새 공개키를 `tauri.conf.json`에 넣고, 그때 정한 비밀번호로 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` 시크릿을 추가한다. 공개키가 바뀌면 이미 설치된 앱은 업데이트할 수 없다(재설치 필요).
 3. **PocketBase 서버 배포** — [server/README.md](../server/README.md) 참고.
 
 ## 릴리스 절차

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest"
-import { initial, next, pause, remaining, start, tick } from "./pomodoro"
+import { initial, next, pause, remaining, start, syncIdle, tick } from "./pomodoro"
 
 const d = { focusMin: 25, shortBreakMin: 5, longBreakMin: 15, longBreakEvery: 4 }
 test("remaining is based on wall clock, not ticks", () => {
@@ -36,4 +36,16 @@ test("changed durations apply from next phase only", () => {
   const d2 = { ...d, focusMin: 50, shortBreakMin: 10 }
   expect(remaining(s, 0)).toBe(25 * 60_000)
   expect(next(s, d2).durationMs).toBe(10 * 60_000)
+})
+test("idle unstarted phase follows new durations; started phases keep theirs", () => {
+  const d2 = { ...d, focusMin: 50 }
+  const s = syncIdle(initial(d), d2)
+  expect(s.durationMs).toBe(50 * 60_000)
+  expect(remaining(start(s, 0), 0)).toBe(50 * 60_000)
+  const running = start(initial(d), 0)
+  expect(syncIdle(running, d2)).toBe(running)
+  const paused = pause(running, 60_000)
+  expect(syncIdle(paused, d2)).toBe(paused)
+  const same = initial(d)
+  expect(syncIdle(same, d)).toBe(same)
 })

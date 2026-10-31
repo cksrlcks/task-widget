@@ -56,9 +56,20 @@ export function LoginScreen() {
       ) : (
         <>
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
-            <Input type="email" placeholder="이메일" {...register("email")} />
+            <label htmlFor="login-email" className="sr-only">
+              이메일
+            </label>
+            <Input id="login-email" type="email" placeholder="이메일" {...register("email")} />
             {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            <Input type="password" placeholder="비밀번호" {...register("password")} />
+            <label htmlFor="login-password" className="sr-only">
+              비밀번호
+            </label>
+            <Input
+              id="login-password"
+              type="password"
+              placeholder="비밀번호"
+              {...register("password")}
+            />
             {errors.password && (
               <p className="text-xs text-destructive">{errors.password.message}</p>
             )}

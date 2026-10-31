@@ -23,7 +23,8 @@
         "shadow": false,
         "skipTaskbar": true,
         "resizable": true,
-        "visible": false
+        "visible": false,
+        "backgroundThrottling": "disabled"
       }
     ],
     "security": {

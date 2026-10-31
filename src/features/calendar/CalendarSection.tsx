@@ -1,5 +1,5 @@
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { DayPanel } from "./DayPanel"
@@ -10,13 +10,28 @@ const DOW = ["일", "월", "화", "수", "목", "금", "토"]
 
 type Props = { className?: string }
 
+/** 위젯을 며칠씩 켜 두므로 자정이 지나면 오늘 표시를 옮긴다 */
+function useToday() {
+  const [today, setToday] = useState(() => toYmd(new Date()))
+  useEffect(() => {
+    const update = () => setToday(toYmd(new Date()))
+    const id = setInterval(update, 60_000)
+    window.addEventListener("focus", update)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener("focus", update)
+    }
+  }, [])
+  return today
+}
+
 export function CalendarSection({ className }: Props) {
   const [ym, setYm] = useState(() => toYmd(new Date()).slice(0, 7))
   const [selected, setSelected] = useState<string | null>(null)
   const y = Number(ym.slice(0, 4))
   const m = Number(ym.slice(5))
   const { data = [], isLoading, isError } = useMonthEvents(ym)
-  const today = toYmd(new Date())
+  const today = useToday()
   const withEvents = new Set(data.map((e) => e.date))
 
   const move = (delta: number) => {

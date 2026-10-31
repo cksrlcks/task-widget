@@ -53,3 +53,17 @@ OAuth로 새로 만들어진 계정은 `SetVerified(true)`로 verified 처리된
 6. Collections > users > Options > OAuth2: Google, Kakao 켜고 클라이언트 ID/시크릿 입력.
 7. 각 OAuth 클라이언트의 리다이렉트 URI: `https://<도메인>/api/oauth2-redirect`.
 8. 카카오 개발자 콘솔 > 동의항목에서 카카오계정(이메일)을 켠다(이메일 없으면 앱이 로그인을 막음).
+
+## 보안: 이메일 자동 연결
+
+PocketBase v0.40.6 소스(`apis/record_auth_with_oauth2.go`, `tools/auth/google.go`, `tools/auth/kakao.go`)를 확인했다.
+
+- **자동 연결한다.** 기존 OAuth 연결도, 로그인 상태도 없으면 제공자가 준 이메일로 기존 계정을 찾아 그 계정에 연결한다.
+  - `case authUser.Email != "":` → `e.App.FindAuthRecordByEmail(form.collection.Id, authUser.Email)`
+- **제공자가 인증했다고 한 이메일만 쓴다.** 인증되지 않은 이메일은 비워 두므로 위 분기에 들어가지 않는다(새 계정 생성 쪽으로 간다).
+  - Google: `if extracted.EmailVerified { user.Email = extracted.Email }`
+  - Kakao: `if extracted.KakaoAccount.IsEmailValid && extracted.KakaoAccount.IsEmailVerified { user.Email = extracted.KakaoAccount.Email }`
+- **미리 만들어 둔 미인증 계정 탈취도 막는다.** 연결 대상 계정이 미인증이면 비밀번호를 무작위로 바꾸고 다른 OAuth 연결을 지운 뒤 인증 처리한다.
+  - `if !isLoggedAuthRecord && !e.Record.Verified() { ... e.Record.SetRandomPassword() }`
+
+결론: 미인증 제공자 이메일이 기존 계정에 연결되는 경로는 없다(계정 탈취 우려 없음). 남는 전제는 Google/Kakao의 "인증됨" 표시를 믿는다는 점뿐이다. 부작용: 이메일 인증을 안 한 비밀번호 계정은 같은 이메일로 소셜 로그인하면 비밀번호가 무작위로 바뀐다(비밀번호 찾기로 다시 만들 수 있다).

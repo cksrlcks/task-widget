@@ -8,6 +8,7 @@ import {
   remaining,
   reset,
   start,
+  syncIdle,
   tick,
   type Durations,
   type PomoState,
@@ -32,6 +33,11 @@ export function usePomodoro() {
   soundRef.current = sound
   const [state, setState] = useState(() => initial(d))
   const [now, setNow] = useState(() => Date.now())
+
+  // 설정에서 시간을 바꾸면 시작 전 단계에 바로 반영한다
+  useEffect(() => {
+    setState((s) => syncIdle(s, dRef.current))
+  }, [focusMin, shortBreakMin, longBreakMin])
 
   useEffect(() => {
     if (state.status !== "running") return
