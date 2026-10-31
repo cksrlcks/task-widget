@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { pb } from "@/lib/pb"
+import { createTodo, deleteTodo, listTodos, updateTodo } from "./services/todos"
 import { sortTodos } from "./sortTodos"
 import type { Todo } from "./type"
 
@@ -8,10 +8,7 @@ export const todoKeys = { all: ["todos"] as const }
 export function useTodos() {
   return useQuery({
     queryKey: todoKeys.all,
-    queryFn: async () =>
-      sortTodos(
-        await pb.collection("todos").getFullList<Todo>({ sort: "created" }),
-      ),
+    queryFn: async () => sortTodos(await listTodos()),
   })
 }
 
@@ -49,9 +46,7 @@ export function useAddTodo() {
   return useTodoMutation((title: string) => {
     const list = qc.getQueryData<Todo[]>(todoKeys.all) ?? []
     const position = Math.max(0, ...list.map((t) => t.position ?? 0)) + 1024
-    return pb
-      .collection("todos")
-      .create({ title, position, user: pb.authStore.record?.id })
+    return createTodo({ title, position })
   })
 }
 
@@ -59,11 +54,7 @@ export function useAddTodo() {
 export const useReorderTodos = () =>
   useTodoMutation(
     (ups: { id: string; position: number }[]) =>
-      Promise.all(
-        ups.map(({ id, position }) =>
-          pb.collection("todos").update(id, { position }),
-        ),
-      ),
+      Promise.all(ups.map(({ id, position }) => updateTodo(id, { position }))),
     (list, ups) =>
       list.map((t) => ({
         ...t,
@@ -74,23 +65,18 @@ export const useReorderTodos = () =>
 export const useUpdateTodo = () =>
   useTodoMutation(
     ({ id, ...data }: { id: string; title?: string; done?: boolean }) =>
-      pb.collection("todos").update(id, data),
+      updateTodo(id, data),
     (list, { id, ...data }) =>
       list.map((t) => (t.id === id ? { ...t, ...data, updated: nowPb() } : t)),
   )
 
 export const useDeleteTodo = () =>
-  useTodoMutation(
-    (id: string) => pb.collection("todos").delete(id),
-    (list, id) => list.filter((t) => t.id !== id),
-  )
+  useTodoMutation(deleteTodo, (list, id) => list.filter((t) => t.id !== id))
 
 export const useClearDone = () =>
   useTodoMutation(
     async (ids: string[]) => {
-      const rs = await Promise.allSettled(
-        ids.map((id) => pb.collection("todos").delete(id)),
-      )
+      const rs = await Promise.allSettled(ids.map(deleteTodo))
       const n = rs.filter((r) => r.status === "rejected").length
       if (n) throw new Error(`${n}개를 지우지 못했습니다.`)
     },

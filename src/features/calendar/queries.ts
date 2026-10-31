@@ -1,22 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { pb } from "@/lib/pb"
-import type { CalEvent } from "./type"
+import {
+  createEvent,
+  deleteEvent,
+  listMonthEvents,
+  updateEvent,
+} from "./services/events"
+import type { EventInput } from "./type"
 
 export const eventKeys = {
   all: ["events"] as const,
   month: (ym: string) => ["events", ym] as const,
 }
 
-export type EventInput = Pick<CalEvent, "title" | "date" | "time" | "memo">
-
 export function useMonthEvents(ym: string) {
   return useQuery({
     queryKey: eventKeys.month(ym),
-    queryFn: () =>
-      pb.collection("events").getFullList<CalEvent>({
-        filter: pb.filter("date ~ {:p}", { p: `${ym}-%` }),
-        sort: "date,time",
-      }),
+    queryFn: () => listMonthEvents(ym),
   })
 }
 
@@ -28,17 +27,11 @@ function useEventMutation<V>(fn: (v: V) => Promise<unknown>) {
   })
 }
 
-export const useAddEvent = () =>
-  useEventMutation((v: EventInput) => {
-    const user = pb.authStore.record?.id
-    if (!user) throw new Error("로그인이 필요합니다.")
-    return pb.collection("events").create({ ...v, user })
-  })
+export const useAddEvent = () => useEventMutation(createEvent)
 
 export const useUpdateEvent = () =>
   useEventMutation(({ id, ...data }: { id: string } & Partial<EventInput>) =>
-    pb.collection("events").update(id, data),
+    updateEvent(id, data),
   )
 
-export const useDeleteEvent = () =>
-  useEventMutation((id: string) => pb.collection("events").delete(id))
+export const useDeleteEvent = () => useEventMutation(deleteEvent)
