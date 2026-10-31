@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react"
-import { useState } from "react"
+import { useState, type RefObject } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -117,12 +117,14 @@ type DialogProps = {
   event?: CalEvent
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** 이 요소 안에 띄운다. 없으면 창 전체 */
+  container?: RefObject<HTMLElement | null>
 }
 
-export function EventDialog({ ymd, event, open, onOpenChange }: DialogProps) {
+export function EventDialog({ ymd, event, open, onOpenChange, container }: DialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent container={container}>
         <EventForm ymd={ymd} event={event} onDone={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
@@ -161,10 +163,16 @@ function EventRow({ event, onEdit }: { event: CalEvent; onEdit: () => void }) {
   )
 }
 
-type Props = { ymd: string; events: CalEvent[]; className?: string }
+type Props = {
+  ymd: string
+  events: CalEvent[]
+  /** 대화상자를 띄울 영역 (캘린더 카드) */
+  dialogContainer?: RefObject<HTMLElement | null>
+  className?: string
+}
 
 /** 고른 날의 일정 목록. 추가·수정은 대화상자에서 한다 */
-export function DayPanel({ ymd, events, className }: Props) {
+export function DayPanel({ ymd, events, dialogContainer, className }: Props) {
   // undefined = 닫힘, null = 새 일정, CalEvent = 수정
   const [editing, setEditing] = useState<CalEvent | null | undefined>(undefined)
   const day = sortDayEvents(events.filter((e) => e.date === ymd))
@@ -192,6 +200,7 @@ export function DayPanel({ ymd, events, className }: Props) {
         event={editing ?? undefined}
         open={editing !== undefined}
         onOpenChange={(o) => !o && setEditing(undefined)}
+        container={dialogContainer}
       />
     </div>
   )

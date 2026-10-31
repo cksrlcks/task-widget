@@ -1,5 +1,5 @@
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { WidgetCard } from "@/features/widget/WidgetCard"
 import { cn } from "@/lib/utils"
@@ -29,6 +29,7 @@ function useToday() {
 export function CalendarSection({ className }: Props) {
   const [ym, setYm] = useState(() => toYmd(new Date()).slice(0, 7))
   const [selected, setSelected] = useState<string | null>(null)
+  const cardRef = useRef<HTMLElement>(null)
   const y = Number(ym.slice(0, 4))
   const m = Number(ym.slice(5))
   const { data = [], isLoading, isError } = useMonthEvents(ym)
@@ -44,6 +45,7 @@ export function CalendarSection({ className }: Props) {
 
   return (
     <WidgetCard
+      ref={cardRef}
       className={className}
       title={`${y}년 ${m}월`}
       action={
@@ -122,7 +124,7 @@ export function CalendarSection({ className }: Props) {
           {isLoading ? "불러오는 중..." : "일정을 불러오지 못했습니다."}
         </p>
       )}
-      {selected && <DayPanel ymd={selected} events={data} />}
+      {selected && <DayPanel ymd={selected} events={data} dialogContainer={cardRef} />}
     </WidgetCard>
   )
 }

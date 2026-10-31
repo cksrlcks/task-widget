@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import type { ReactNode, Ref } from "react"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -6,15 +6,17 @@ type Props = {
   /** 제목 오른쪽 버튼 */
   action?: ReactNode
   className?: string
+  ref?: Ref<HTMLElement>
   children: ReactNode
 }
 
 /** 위젯 안의 카드 한 장 */
-export function WidgetCard({ title, action, className, children }: Props) {
+export function WidgetCard({ title, action, className, ref, children }: Props) {
   return (
     <section
+      ref={ref}
       className={cn(
-        "flex flex-col rounded-lg border border-black/[.06] bg-card text-card-foreground shadow-[0_1px_3px_rgb(0_0_0/.08)] dark:border-white/[.08]",
+        "relative flex flex-col rounded-lg border border-black/[.06] bg-card text-card-foreground shadow-[0_1px_3px_rgb(0_0_0/.08)] dark:border-white/[.08]",
         className,
       )}
     >
