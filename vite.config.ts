@@ -1,4 +1,4 @@
-import path from "node:path"
+import { fileURLToPath } from "node:url"
 // @ts-expect-error type error without @types/node package
 import process from "node:process"
 import tailwindcss from "@tailwindcss/vite"
@@ -10,7 +10,7 @@ const host = process.env.TAURI_DEV_HOST
 // https://vite.dev/config/
 export default defineConfig(() => ({
   plugins: [react(), tailwindcss()],
-  resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
