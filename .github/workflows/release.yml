@@ -39,6 +39,14 @@ jobs:
 
       - run: npm ci
 
+      # CHANGELOG.md에서 이 태그의 섹션을 꺼내 릴리스 본문으로 쓴다
+      - id: notes
+        shell: bash
+        run: |
+          body=$(awk -v h="## ${GITHUB_REF_NAME}" '$0==h{f=1;next} /^## /{f=0} f' CHANGELOG.md)
+          [ -n "$body" ] || { echo "CHANGELOG.md에 ## ${GITHUB_REF_NAME} 섹션이 없습니다"; exit 1; }
+          { echo "body<<__EOF__"; echo "$body"; echo "__EOF__"; } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -48,7 +56,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Task Widget ${{ github.ref_name }}
-          releaseBody: 변경 사항은 커밋 내역을 참고하세요.
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true

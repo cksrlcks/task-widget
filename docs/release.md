@@ -14,6 +14,7 @@
 
 ## 릴리스 절차
 
+1. [CHANGELOG.md](../CHANGELOG.md)의 `## 다음 버전`을 `## v0.1.1`처럼 바꾸고, 사용자 입장의 변경 요약을 확인한다. 이 섹션이 없으면 릴리스 워크플로가 실패한다.
 1. `package.json`의 `version`을 올린다(예: `0.1.1`). `tauri.conf.json`의 `version`은 `../package.json`을 따르므로 그대로 둔다. `src-tauri/Cargo.toml`의 version도 맞춰 두면 좋다.
 2. 커밋 후 태그를 만들어 푸시한다.
    ```
