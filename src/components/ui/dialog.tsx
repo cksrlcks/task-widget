@@ -41,24 +41,17 @@ function DialogContent({
   className,
   children,
   showCloseButton = false,
-  container,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
-  /** 주면 그 요소(position: relative) 안에만 덮개와 창을 띄운다 */
-  container?: DialogPrimitive.Portal.Props["container"]
 }) {
-  // 컨테이너 안에 그리면 위젯 끌기 핸들러가 받으므로 끌기를 막는다
-  const local = container ? { "data-no-drag": "" } : {}
   return (
-    <DialogPortal container={container}>
-      <DialogOverlay className={cn(container && "absolute rounded-[inherit]")} {...local} />
+    <DialogPortal>
+      <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        {...local}
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-card px-4.5 pt-4.5 pb-4.5 text-sm text-card-foreground shadow-dialog duration-100 outline-none has-data-[slot=dialog-footer]:pb-0 sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
-          container && "absolute max-h-[calc(100%-1rem)] max-w-[calc(100%-1rem)]",
           className
         )}
         {...props}

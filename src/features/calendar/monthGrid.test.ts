@@ -16,8 +16,19 @@ test("october 2026 grid starts on sunday 9/27 and has 42 cells", () => {
 })
 
 test("sortDayEvents puts all-day first then time ascending", () => {
-  const e = (id: string, time: string): CalEvent => ({ id, title: id, date: "2026-10-31", time, memo: "" })
-  const r = sortDayEvents([e("b", "14:00"), e("a", "09:30"), e("d", ""), e("c", "09:30")])
+  const e = (id: string, time: string): CalEvent => ({
+    id,
+    title: id,
+    date: "2026-10-31",
+    time,
+    memo: "",
+  })
+  const r = sortDayEvents([
+    e("b", "14:00"),
+    e("a", "09:30"),
+    e("d", ""),
+    e("c", "09:30"),
+  ])
   expect(r.map((x) => x.id)).toEqual(["d", "a", "c", "b"])
 })
 

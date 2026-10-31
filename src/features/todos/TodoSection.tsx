@@ -71,7 +71,7 @@ function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
     <li
       data-no-drag
       data-undone={todo.done ? undefined : ""}
-      data-reorder={todo.done ? undefined : ""}
+      data-reorder=""
       style={style}
       className={cn(
         "group relative flex min-h-9 items-center gap-2 rounded-md pr-1 pl-2 hover:bg-muted/70",
@@ -127,7 +127,6 @@ function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
         onPointerDown={onGrab}
         className={cn(
           "flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground/60 opacity-0 group-hover:opacity-100 active:cursor-grabbing",
-          !onGrab && "invisible",
           dragging && "opacity-100",
         )}
       >
@@ -156,12 +155,26 @@ export function TodoSection({ className }: Props) {
   const hasDone = data.some((t) => t.done)
   const undone = data.filter((t) => !t.done)
   const move = useReorderTodos()
-  const { listRef, grab, shift, dragging } = useDragReorder<HTMLUListElement>(
-    (from, to) => {
-      const ups = reorder(undone, from, to)
-      if (ups.length) move.mutate(ups, { onError: fail })
-    },
-  )
+  const done = data.filter((t) => t.done)
+  // 안 한 일·한 일은 각자 목록 안에서만 순서를 바꾼다
+  const dragUndone = useDragReorder<HTMLUListElement>((from, to) => {
+    const ups = reorder(undone, from, to)
+    if (ups.length) move.mutate(ups, { onError: fail })
+  })
+  const dragDone = useDragReorder<HTMLUListElement>((from, to) => {
+    const ups = reorder(done, from, to)
+    if (ups.length) move.mutate(ups, { onError: fail })
+  })
+  const rows = (list: Todo[], d: typeof dragUndone) =>
+    list.map((t, i) => (
+      <TodoRow
+        key={t.id}
+        todo={t}
+        onGrab={d.grab(i)}
+        dragging={d.dragging === i}
+        style={d.shift(i)}
+      />
+    ))
 
   const submit = () => {
     const r = titleSchema.safeParse(draft)
@@ -203,31 +216,22 @@ export function TodoSection({ className }: Props) {
         )
       }
     >
-      <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-1 pb-1.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-1.5">
         {isLoading || isError || data.length === 0 ? (
-          <li className="py-4 text-center text-sm text-muted-foreground">
+          <p className="py-4 text-center text-sm text-muted-foreground">
             {isLoading
               ? "불러오는 중..."
               : isError
                 ? "할 일을 불러오지 못했습니다."
                 : "할 일이 없어요"}
-          </li>
+          </p>
         ) : (
-          data.map((t, i) =>
-            t.done ? (
-              <TodoRow key={t.id} todo={t} />
-            ) : (
-              <TodoRow
-                key={t.id}
-                todo={t}
-                onGrab={grab(i)}
-                dragging={dragging === i}
-                style={shift(i)}
-              />
-            ),
-          )
+          <>
+            <ul ref={dragUndone.listRef}>{rows(undone, dragUndone)}</ul>
+            <ul ref={dragDone.listRef}>{rows(done, dragDone)}</ul>
+          </>
         )}
-      </ul>
+      </div>
       <div className="relative mx-2 mb-2">
         <IconPlus
           aria-hidden

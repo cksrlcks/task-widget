@@ -17,7 +17,11 @@ export type Durations = {
 
 const MIN = 60_000
 const phaseMs = (p: Phase, d: Durations) =>
-  (p === "focus" ? d.focusMin : p === "short" ? d.shortBreakMin : d.longBreakMin) * MIN
+  (p === "focus"
+    ? d.focusMin
+    : p === "short"
+      ? d.shortBreakMin
+      : d.longBreakMin) * MIN
 
 const idle = (phase: Phase, round: number, d: Durations): PomoState => ({
   phase,
@@ -39,12 +43,22 @@ export const remaining = (s: PomoState, now: number) =>
 
 export function start(s: PomoState, now: number): PomoState {
   if (s.status === "running" || s.status === "done") return s
-  return { ...s, status: "running", endsAt: now + remaining(s, now), pausedLeftMs: null }
+  return {
+    ...s,
+    status: "running",
+    endsAt: now + remaining(s, now),
+    pausedLeftMs: null,
+  }
 }
 
 export function pause(s: PomoState, now: number): PomoState {
   if (s.status !== "running") return s
-  return { ...s, status: "paused", pausedLeftMs: remaining(s, now), endsAt: null }
+  return {
+    ...s,
+    status: "paused",
+    pausedLeftMs: remaining(s, now),
+    endsAt: null,
+  }
 }
 
 export const reset = (s: PomoState, d: Durations) => idle(s.phase, s.round, d)

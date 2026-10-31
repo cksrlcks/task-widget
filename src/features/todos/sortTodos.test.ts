@@ -17,12 +17,12 @@ const t = (
   updated,
 })
 
-test("undone first by created asc, done after by updated desc", () => {
+test("undone first, then done; each by position then created", () => {
   const out = sortTodos([
-    t("a", true, "1", "5"),
+    t("a", true, "1", "5", 2048),
     t("b", false, "2"),
     t("c", false, "1"),
-    t("d", true, "1", "9"),
+    t("d", true, "2", "9", 1024),
   ])
   expect(out.map((x) => x.id)).toEqual(["c", "b", "d", "a"])
 })

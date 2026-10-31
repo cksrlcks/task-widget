@@ -1,7 +1,20 @@
 import { expect, test } from "vitest"
-import { initial, next, pause, remaining, start, syncIdle, tick } from "./pomodoro"
+import {
+  initial,
+  next,
+  pause,
+  remaining,
+  start,
+  syncIdle,
+  tick,
+} from "./pomodoro"
 
-const d = { focusMin: 25, shortBreakMin: 5, longBreakMin: 15, longBreakEvery: 4 }
+const d = {
+  focusMin: 25,
+  shortBreakMin: 5,
+  longBreakMin: 15,
+  longBreakEvery: 4,
+}
 test("remaining is based on wall clock, not ticks", () => {
   const s = start(initial(d), 0)
   expect(remaining(s, 10 * 60_000)).toBe(15 * 60_000)

@@ -1,19 +1,10 @@
-import { useState, type RefObject } from "react"
+import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useConfirm } from "@/hooks/use-confirm"
 import { cn } from "@/lib/utils"
@@ -42,7 +33,7 @@ const fail = (err: unknown) =>
 
 type FormProps = { ymd: string; event?: CalEvent; onDone: () => void }
 
-/** 대화상자가 열릴 때마다 새로 마운트돼 입력값이 초기화된다 */
+/** 섹션 안에 펼쳐지는 일정 입력. 열 때마다 새로 마운트돼 입력값이 초기화된다 */
 function EventForm({ ymd, event, onDone }: FormProps) {
   const add = useAddEvent()
   const update = useUpdateEvent()
@@ -73,11 +64,17 @@ function EventForm({ ymd, event, onDone }: FormProps) {
   })
 
   return (
-    <form onSubmit={submit} className="contents">
-      <DialogHeader>
-        <DialogTitle>{event ? "일정 수정" : "새 일정"}</DialogTitle>
-        <DialogDescription>{dayLabel(ymd)}</DialogDescription>
-      </DialogHeader>
+    <form
+      onSubmit={submit}
+      onKeyDown={(e) => e.key === "Escape" && onDone()}
+      className="flex flex-col gap-2 px-1.5 pt-1 pb-1.5"
+    >
+      <p className="text-xs font-semibold">
+        {event ? "일정 수정" : "새 일정"}
+        <span className="ml-1.5 font-normal text-muted-foreground">
+          {dayLabel(ymd)}
+        </span>
+      </p>
       <div className="flex flex-col gap-2">
         <Input
           autoFocus
@@ -113,41 +110,15 @@ function EventForm({ ymd, event, onDone }: FormProps) {
           </p>
         )}
       </div>
-      <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>
+      <div className="flex justify-end gap-1.5">
+        <Button type="button" size="sm" variant="outline" onClick={onDone}>
           취소
-        </DialogClose>
-        <Button type="submit" disabled={isSubmitting}>
+        </Button>
+        <Button type="submit" size="sm" disabled={isSubmitting}>
           {event ? "저장" : "추가"}
         </Button>
-      </DialogFooter>
+      </div>
     </form>
-  )
-}
-
-type DialogProps = {
-  ymd: string
-  /** 있으면 수정, 없으면 추가 */
-  event?: CalEvent
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  /** 이 요소 안에 띄운다. 없으면 창 전체 */
-  container?: RefObject<HTMLElement | null>
-}
-
-export function EventDialog({
-  ymd,
-  event,
-  open,
-  onOpenChange,
-  container,
-}: DialogProps) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent container={container}>
-        <EventForm ymd={ymd} event={event} onDone={() => onOpenChange(false)} />
-      </DialogContent>
-    </Dialog>
   )
 }
 
@@ -204,21 +175,13 @@ function EventRow({ event, onEdit }: { event: CalEvent; onEdit: () => void }) {
 type Props = {
   ymd: string
   events: CalEvent[]
-  /** 대화상자를 띄울 영역 (캘린더 카드) */
-  dialogContainer?: RefObject<HTMLElement | null>
   /** 카드 제목에 이미 날짜가 있으면 숨긴다 */
   hideLabel?: boolean
   className?: string
 }
 
 /** 고른 날의 일정 목록. 추가·수정은 대화상자에서 한다 */
-export function DayPanel({
-  ymd,
-  events,
-  dialogContainer,
-  hideLabel,
-  className,
-}: Props) {
+export function DayPanel({ ymd, events, hideLabel, className }: Props) {
   // undefined = 닫힘, null = 새 일정, CalEvent = 수정
   const [editing, setEditing] = useState<CalEvent | null | undefined>(undefined)
   const day = sortDayEvents(events.filter((e) => e.date === ymd))
@@ -236,50 +199,61 @@ export function DayPanel({
         className,
       )}
     >
-      {!hideLabel && (
-        <div className="flex items-center justify-between pr-0.5 pl-2">
-          <p className="text-xs font-semibold">{dayLabel(ymd)}</p>
-          {addButton}
-        </div>
-      )}
-      {day.length === 0 && hideLabel ? (
-        // 오늘 보기: 빈 상태와 추가 버튼을 한 줄에 두어 카드를 낮게
-        <div className="flex items-center justify-between pl-2">
-          <p className="text-xs text-muted-foreground">오늘 일정이 없어요</p>
-          <Button size="xs" variant="ghost" onClick={() => setEditing(null)}>
-            <IconPlus />
-            추가
-          </Button>
-        </div>
-      ) : day.length === 0 ? (
-        <p className="py-2 text-center text-xs text-muted-foreground">
-          일정이 없어요
-        </p>
+      {editing !== undefined ? (
+        // 추가·수정은 섹션 안에서: 목록 자리에 입력 양식이 펼쳐진다
+        <EventForm
+          key={editing?.id ?? "new"}
+          ymd={ymd}
+          event={editing ?? undefined}
+          onDone={() => setEditing(undefined)}
+        />
       ) : (
-        <ul className="max-h-40 overflow-y-auto">
-          {day.map((e) => (
-            <EventRow key={e.id} event={e} onEdit={() => setEditing(e)} />
-          ))}
-        </ul>
+        <>
+          {!hideLabel && (
+            <div className="flex items-center justify-between pr-0.5 pl-2">
+              <p className="text-xs font-semibold">{dayLabel(ymd)}</p>
+              {addButton}
+            </div>
+          )}
+          {day.length === 0 && hideLabel ? (
+            // 오늘 보기: 빈 상태와 추가 버튼을 한 줄에 두어 카드를 낮게
+            <div className="flex items-center justify-between pl-2">
+              <p className="text-xs text-muted-foreground">
+                오늘 일정이 없어요
+              </p>
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => setEditing(null)}
+              >
+                <IconPlus />
+                추가
+              </Button>
+            </div>
+          ) : day.length === 0 ? (
+            <p className="py-2 text-center text-xs text-muted-foreground">
+              일정이 없어요
+            </p>
+          ) : (
+            <ul className="max-h-40 overflow-y-auto">
+              {day.map((e) => (
+                <EventRow key={e.id} event={e} onEdit={() => setEditing(e)} />
+              ))}
+            </ul>
+          )}
+          {hideLabel && day.length > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="justify-start text-muted-foreground"
+              onClick={() => setEditing(null)}
+            >
+              <IconPlus />
+              일정 추가
+            </Button>
+          )}
+        </>
       )}
-      {hideLabel && day.length > 0 && (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="justify-start text-muted-foreground"
-          onClick={() => setEditing(null)}
-        >
-          <IconPlus />
-          일정 추가
-        </Button>
-      )}
-      <EventDialog
-        ymd={ymd}
-        event={editing ?? undefined}
-        open={editing !== undefined}
-        onOpenChange={(o) => !o && setEditing(undefined)}
-        container={dialogContainer}
-      />
     </div>
   )
 }

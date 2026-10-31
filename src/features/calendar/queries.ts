@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { pb } from "@/lib/pb"
 import type { CalEvent } from "./type"
 
-export const eventKeys = { all: ["events"] as const, month: (ym: string) => ["events", ym] as const }
+export const eventKeys = {
+  all: ["events"] as const,
+  month: (ym: string) => ["events", ym] as const,
+}
 
 export type EventInput = Pick<CalEvent, "title" | "date" | "time" | "memo">
 
@@ -37,4 +40,5 @@ export const useUpdateEvent = () =>
     pb.collection("events").update(id, data),
   )
 
-export const useDeleteEvent = () => useEventMutation((id: string) => pb.collection("events").delete(id))
+export const useDeleteEvent = () =>
+  useEventMutation((id: string) => pb.collection("events").delete(id))

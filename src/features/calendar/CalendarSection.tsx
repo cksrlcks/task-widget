@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import {
   IconCalendarMonth,
   IconChevronLeft,
@@ -38,7 +38,6 @@ export function CalendarSection({ className }: Props) {
   // 기본은 오늘 일정만. 달력 보기를 누르면 월간 달력이 펼쳐진다
   const { calendarExpanded: expanded } = useAppPrefs()
   const setExpanded = (v: boolean) => setPrefs({ calendarExpanded: v })
-  const cardRef = useRef<HTMLElement>(null)
   const y = Number(ym.slice(0, 4))
   const m = Number(ym.slice(5))
   const { data = [], isLoading, isError } = useMonthEvents(ym)
@@ -70,7 +69,6 @@ export function CalendarSection({ className }: Props) {
   if (!expanded)
     return (
       <WidgetCard
-        ref={cardRef}
         className={className}
         title={`오늘 · ${dayLabel(today)}`}
         action={toggle}
@@ -78,7 +76,6 @@ export function CalendarSection({ className }: Props) {
         <DayPanel
           ymd={today}
           events={data}
-          dialogContainer={cardRef}
           hideLabel
           className="border-t-0 pt-0"
         />
@@ -87,7 +84,6 @@ export function CalendarSection({ className }: Props) {
 
   return (
     <WidgetCard
-      ref={cardRef}
       className={className}
       title={`${y}년 ${m}월`}
       action={
@@ -180,9 +176,7 @@ export function CalendarSection({ className }: Props) {
           {isLoading ? "불러오는 중..." : "일정을 불러오지 못했습니다."}
         </p>
       )}
-      {selected && (
-        <DayPanel ymd={selected} events={data} dialogContainer={cardRef} />
-      )}
+      {selected && <DayPanel ymd={selected} events={data} />}
     </WidgetCard>
   )
 }
