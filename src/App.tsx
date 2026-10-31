@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { LoginScreen } from "@/features/auth/LoginScreen"
 import { runBoot, useAuth } from "@/features/auth/useAuth"
 import { useAppPrefs } from "@/features/settings/appPrefs"
+import { useUpdateCheck } from "@/features/update/useUpdateCheck"
 import { TopBar } from "@/features/widget/TopBar"
 import { Widget } from "@/features/widget/Widget"
 
@@ -25,6 +26,7 @@ function Body() {
 
 /** 투명 창 위에 둥근 배경을 직접 그린다. 투명도는 CSS opacity(글자가 흐려지지 않는다) */
 export default function App() {
+  useUpdateCheck()
   const { opacity } = useAppPrefs()
   return (
     <div
