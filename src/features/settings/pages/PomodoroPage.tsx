@@ -54,7 +54,7 @@ export function PomodoroPage() {
   return (
     <>
       <Section title="시간">
-        <NumberRow k="focusMin" title="집중" unit="분" schema={minutesSchema} />
+        <NumberRow k="focusMin" title="집중 시간" unit="분" schema={minutesSchema} />
         <NumberRow
           k="shortBreakMin"
           title="짧은 휴식"

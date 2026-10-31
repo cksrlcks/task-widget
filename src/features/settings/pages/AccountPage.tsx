@@ -66,8 +66,12 @@ export function AccountPage() {
 
   async function signOut() {
     logout()
-    const { getCurrentWindow } = await import("@tauri-apps/api/window")
-    await getCurrentWindow().close()
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window")
+      await getCurrentWindow().close()
+    } catch {
+      // Tauri 밖(브라우저 미리보기)에서는 닫을 창이 없다
+    }
   }
 
   return (
