@@ -1,5 +1,5 @@
 import { expect, test } from "vitest"
-import { fracToMin } from "./barScale"
+import { fracToMin, snapTicks } from "./barScale"
 import {
   initial,
   pause,
@@ -48,4 +48,12 @@ test("fracToMin snaps to minutes and clamps to 1..scale", () => {
   expect(fracToMin(0.25, 120)).toBe(30)
   expect(fracToMin(-0.2, 60)).toBe(1)
   expect(fracToMin(1.3, 60)).toBe(60)
+})
+test("snapTicks keeps tick and gap on whole device pixels", () => {
+  for (const [w, dpr] of [[270, 1], [263.2, 1.25], [250, 1.5], [301, 2]]) {
+    const { tick, gap } = snapTicks(w, dpr)
+    expect(Number.isInteger(Math.round(tick * dpr * 1e6) / 1e6)).toBe(true)
+    expect(Number.isInteger(Math.round(gap * dpr * 1e6) / 1e6)).toBe(true)
+    expect((tick + gap) * 30).toBeLessThanOrEqual(w + 1e-9)
+  }
 })
