@@ -28,9 +28,6 @@ describe("loadPrefs", () => {
       showTodos: true,
       showCalendar: true,
       focusMin: 25,
-      shortBreakMin: 5,
-      longBreakMin: 15,
-      longBreakEvery: 4,
       sound: true,
       sectionHeights: {},
       sectionOrder: ["pomodoro", "todos", "calendar"],
@@ -47,7 +44,6 @@ describe("loadPrefs", () => {
   test("out-of-range values are clamped", () => {
     expect(loadPrefs('{"focusMin":0}').focusMin).toBe(1)
     expect(loadPrefs('{"focusMin":999}').focusMin).toBe(120)
-    expect(loadPrefs('{"longBreakEvery":99}').longBreakEvery).toBe(10)
   })
   test("invalid options and types fall back to defaults", () => {
     expect(loadPrefs('{"zoom":2}').zoom).toBe(1)

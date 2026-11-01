@@ -1,64 +1,51 @@
 import { expect, test } from "vitest"
+import { fracToMin } from "./barScale"
 import {
   initial,
-  next,
   pause,
   remaining,
+  reset,
+  setDuration,
   start,
   syncIdle,
   tick,
 } from "./pomodoro"
 
-const d = {
-  focusMin: 25,
-  shortBreakMin: 5,
-  longBreakMin: 15,
-  longBreakEvery: 4,
-}
 test("remaining is based on wall clock, not ticks", () => {
-  const s = start(initial(d), 0)
+  const s = start(initial(25), 0)
   expect(remaining(s, 10 * 60_000)).toBe(15 * 60_000)
 })
 test("pause freezes remaining, start resumes", () => {
-  let s = pause(start(initial(d), 0), 60_000)
+  let s = pause(start(initial(25), 0), 60_000)
   expect(remaining(s, 999_999)).toBe(24 * 60_000)
   s = start(s, 1_000_000)
   expect(remaining(s, 1_060_000)).toBe(23 * 60_000)
 })
-test("tick past end marks done and does not auto start next", () => {
-  const s = tick(start(initial(d), 0), 25 * 60_000 + 1)
+test("tick past end marks done; start again restarts full duration", () => {
+  const s = tick(start(initial(25), 0), 25 * 60_000 + 1)
   expect(s.status).toBe("done")
-  expect(s.phase).toBe("focus")
+  expect(remaining(start(s, 0), 0)).toBe(25 * 60_000)
 })
-test("focus -> short, and 4th focus -> long", () => {
-  let s = initial(d)
-  s = next(s, d)
-  expect(s.phase).toBe("short")
-  s = next(s, d)
-  expect(s.phase).toBe("focus")
-  expect(s.round).toBe(2)
-  s = next(next(next(next(s, d), d), d), d)
-  expect(s.round).toBe(4)
-  s = next(s, d)
-  expect(s.phase).toBe("long")
-  s = next(s, d)
-  expect(s.round).toBe(1)
-})
-test("changed durations apply from next phase only", () => {
-  const s = start(initial(d), 0)
-  const d2 = { ...d, focusMin: 50, shortBreakMin: 10 }
-  expect(remaining(s, 0)).toBe(25 * 60_000)
-  expect(next(s, d2).durationMs).toBe(10 * 60_000)
-})
-test("idle unstarted phase follows new durations; started phases keep theirs", () => {
-  const d2 = { ...d, focusMin: 50 }
-  const s = syncIdle(initial(d), d2)
-  expect(s.durationMs).toBe(50 * 60_000)
-  expect(remaining(start(s, 0), 0)).toBe(50 * 60_000)
-  const running = start(initial(d), 0)
-  expect(syncIdle(running, d2)).toBe(running)
+test("idle follows default minutes; running and paused keep theirs", () => {
+  expect(syncIdle(initial(25), 50).durationMs).toBe(50 * 60_000)
+  const running = start(initial(25), 0)
+  expect(syncIdle(running, 50)).toBe(running)
   const paused = pause(running, 60_000)
-  expect(syncIdle(paused, d2)).toBe(paused)
-  const same = initial(d)
-  expect(syncIdle(same, d)).toBe(same)
+  expect(syncIdle(paused, 50)).toBe(paused)
+  const same = initial(25)
+  expect(syncIdle(same, 25)).toBe(same)
+})
+test("setDuration sets idle duration, ignored while running; reset keeps it", () => {
+  const s = setDuration(pause(start(initial(25), 0), 60_000), 40 * 60_000)
+  expect(s.status).toBe("idle")
+  expect(remaining(s, 0)).toBe(40 * 60_000)
+  const running = start(s, 0)
+  expect(setDuration(running, 15 * 60_000)).toBe(running)
+  expect(remaining(reset(pause(running, 60_000)), 0)).toBe(40 * 60_000)
+})
+test("fracToMin snaps to minutes and clamps to 1..scale", () => {
+  expect(fracToMin(0.25, 60)).toBe(15)
+  expect(fracToMin(0.25, 120)).toBe(30)
+  expect(fracToMin(-0.2, 60)).toBe(1)
+  expect(fracToMin(1.3, 60)).toBe(60)
 })

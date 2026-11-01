@@ -3,7 +3,7 @@ import { setPrefs, useAppPrefs } from "../appPrefs"
 import { minutesSchema, parseField } from "../prefsSchema"
 import { Row } from "./Row"
 
-type NumKey = "focusMin" | "shortBreakMin" | "longBreakMin" | "longBreakEvery"
+type NumKey = "focusMin"
 
 /** 유효한 값일 때만 저장한다. 아니면 입력은 그대로 두고 안내 문구만 보인다 */
 export function NumberRow({

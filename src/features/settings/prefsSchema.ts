@@ -8,7 +8,6 @@ const int = (min: number, max: number) =>
     .max(max, `${min} 이상 ${max} 이하로 입력해 주세요`)
 
 export const minutesSchema = int(1, 120)
-export const everySchema = int(1, 10)
 
 /** 입력 문자열을 검사한다. 통과하면 값, 아니면 안내 문구 */
 export function parseField(

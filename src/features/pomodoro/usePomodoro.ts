@@ -3,14 +3,13 @@ import { useAppPrefs } from "@/features/settings/appPrefs"
 import { isTauri } from "@/features/shell/platform"
 import {
   initial,
-  next,
   pause,
   remaining,
   reset,
+  setDuration,
   start,
   syncIdle,
   tick,
-  type Durations,
   type PomoState,
 } from "./pomodoro"
 
@@ -33,20 +32,16 @@ async function notify(body: string) {
 }
 
 export function usePomodoro() {
-  const { focusMin, shortBreakMin, longBreakMin, longBreakEvery, sound } =
-    useAppPrefs()
-  const d: Durations = { focusMin, shortBreakMin, longBreakMin, longBreakEvery }
-  const dRef = useRef(d)
-  dRef.current = d
+  const { focusMin, sound } = useAppPrefs()
   const soundRef = useRef(sound)
   soundRef.current = sound
-  const [state, setState] = useState(() => initial(d))
+  const [state, setState] = useState(() => initial(focusMin))
   const [now, setNow] = useState(() => Date.now())
 
-  // 설정에서 시간을 바꾸면 시작 전 단계에 바로 반영한다
+  // 설정에서 기본 시간을 바꾸면 시작 전 상태에 바로 반영한다
   useEffect(() => {
-    setState((s) => syncIdle(s, dRef.current))
-  }, [focusMin, shortBreakMin, longBreakMin])
+    setState((s) => syncIdle(s, focusMin))
+  }, [focusMin])
 
   useEffect(() => {
     if (state.status !== "running") return
@@ -59,16 +54,11 @@ export function usePomodoro() {
   }, [state.status])
 
   // done으로 바뀌는 순간 한 번만 알린다
-  const phase = state.phase
   useEffect(() => {
     if (state.status !== "done") return
     if (soundRef.current) void new Audio("/ding.wav").play().catch(() => {})
-    void notify(
-      phase === "focus"
-        ? "집중 끝! 휴식할 시간이에요"
-        : "휴식 끝! 다시 집중할 시간이에요",
-    ).catch(() => {})
-  }, [state.status, phase])
+    void notify("타이머가 끝났어요").catch(() => {})
+  }, [state.status])
 
   const act = useCallback((f: (s: PomoState, t: number) => PomoState) => {
     const t = Date.now()
@@ -81,9 +71,7 @@ export function usePomodoro() {
     remainingMs: remaining(state, now),
     start: () => act(start),
     pause: () => act(pause),
-    reset: () => act((s) => reset(s, dRef.current)),
-    skip: () => act((s) => next(s, dRef.current)),
-    next: () => act((s) => next(s, dRef.current)),
-    longBreakEvery,
+    reset: () => act(reset),
+    setMinutes: (m: number) => act((s) => setDuration(s, m * 60_000)),
   }
 }

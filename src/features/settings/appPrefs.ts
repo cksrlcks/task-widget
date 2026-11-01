@@ -17,10 +17,8 @@ export type AppPrefs = {
   showPomodoro: boolean
   showTodos: boolean
   showCalendar: boolean
+  /** 타이머 기본 시간(분) */
   focusMin: number
-  shortBreakMin: number
-  longBreakMin: number
-  longBreakEvery: number
   sound: boolean
   /** 사용자가 경계를 끌어 정한 섹션 높이(px). 없으면 내용 크기 */
   sectionHeights: Partial<Record<SectionId, number>>
@@ -41,9 +39,6 @@ export const DEFAULTS: AppPrefs = {
   showTodos: true,
   showCalendar: true,
   focusMin: 25,
-  shortBreakMin: 5,
-  longBreakMin: 15,
-  longBreakEvery: 4,
   sound: true,
   sectionHeights: {},
   sectionOrder: ["pomodoro", "todos", "calendar"],
@@ -100,9 +95,6 @@ export function loadPrefs(raw: string | null): AppPrefs {
     showTodos: bool(s.showTodos, d.showTodos),
     showCalendar: bool(s.showCalendar, d.showCalendar),
     focusMin: num(s.focusMin, 1, 120, d.focusMin),
-    shortBreakMin: num(s.shortBreakMin, 1, 120, d.shortBreakMin),
-    longBreakMin: num(s.longBreakMin, 1, 120, d.longBreakMin),
-    longBreakEvery: num(s.longBreakEvery, 1, 10, d.longBreakEvery),
     sound: bool(s.sound, d.sound),
     sectionHeights: heights(s.sectionHeights),
     sectionOrder: order(s.sectionOrder),

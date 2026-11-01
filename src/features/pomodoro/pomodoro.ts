@@ -1,38 +1,18 @@
-export type Phase = "focus" | "short" | "long"
 export type PomoState = {
-  phase: Phase
-  /** 현재 집중 회차(1부터) */
-  round: number
   status: "idle" | "running" | "paused" | "done"
   endsAt: number | null
   pausedLeftMs: number | null
   durationMs: number
 }
-export type Durations = {
-  focusMin: number
-  shortBreakMin: number
-  longBreakMin: number
-  longBreakEvery: number
-}
 
 const MIN = 60_000
-const phaseMs = (p: Phase, d: Durations) =>
-  (p === "focus"
-    ? d.focusMin
-    : p === "short"
-      ? d.shortBreakMin
-      : d.longBreakMin) * MIN
 
-const idle = (phase: Phase, round: number, d: Durations): PomoState => ({
-  phase,
-  round,
+export const initial = (min: number): PomoState => ({
   status: "idle",
   endsAt: null,
   pausedLeftMs: null,
-  durationMs: phaseMs(phase, d),
+  durationMs: min * MIN,
 })
-
-export const initial = (d: Durations) => idle("focus", 1, d)
 
 export const remaining = (s: PomoState, now: number) =>
   s.status === "running"
@@ -41,14 +21,11 @@ export const remaining = (s: PomoState, now: number) =>
       ? 0
       : (s.pausedLeftMs ?? s.durationMs)
 
+/** 끝난 뒤 다시 누르면 같은 시간으로 새로 시작한다 */
 export function start(s: PomoState, now: number): PomoState {
-  if (s.status === "running" || s.status === "done") return s
-  return {
-    ...s,
-    status: "running",
-    endsAt: now + remaining(s, now),
-    pausedLeftMs: null,
-  }
+  if (s.status === "running") return s
+  const left = s.status === "done" ? s.durationMs : remaining(s, now)
+  return { ...s, status: "running", endsAt: now + left, pausedLeftMs: null }
 }
 
 export function pause(s: PomoState, now: number): PomoState {
@@ -61,22 +38,27 @@ export function pause(s: PomoState, now: number): PomoState {
   }
 }
 
-export const reset = (s: PomoState, d: Durations) => idle(s.phase, s.round, d)
+// 다이얼로 직접 맞춘 시간이 있으면 그 시간으로 되돌린다
+export const reset = (s: PomoState): PomoState => ({
+  ...s,
+  status: "idle",
+  endsAt: null,
+  pausedLeftMs: null,
+})
+
+/** 다이얼·퀵 버튼으로 시간을 정한다. 진행 중엔 무시 */
+export function setDuration(s: PomoState, ms: number): PomoState {
+  if (s.status === "running") return s
+  return { ...reset(s), durationMs: ms }
+}
 
 export function tick(s: PomoState, now: number): PomoState {
   if (s.status !== "running" || remaining(s, now) > 0) return s
   return { ...s, status: "done", endsAt: null, pausedLeftMs: null }
 }
 
-export function next(s: PomoState, d: Durations): PomoState {
-  if (s.phase === "focus")
-    return idle(s.round >= d.longBreakEvery ? "long" : "short", s.round, d)
-  return idle("focus", s.phase === "long" ? 1 : s.round + 1, d)
-}
-
-/** 아직 시작하지 않은 대기 단계만 바뀐 시간을 바로 따른다 */
-export function syncIdle(s: PomoState, d: Durations): PomoState {
-  if (s.status !== "idle" || s.pausedLeftMs != null) return s
-  const durationMs = phaseMs(s.phase, d)
-  return durationMs === s.durationMs ? s : { ...s, durationMs }
+/** 시작 전 대기 상태만 설정의 기본 시간을 바로 따른다 */
+export function syncIdle(s: PomoState, min: number): PomoState {
+  if (s.status !== "idle" || s.durationMs === min * MIN) return s
+  return { ...s, durationMs: min * MIN }
 }
