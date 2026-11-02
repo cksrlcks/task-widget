@@ -63,7 +63,8 @@ export function PomodoroSection({ className }: Props) {
             aria-pressed={p.state.durationMs === m * 60_000}
             disabled={running}
             onClick={() => p.setMinutes(m)}
-            className="h-8 rounded-full bg-foreground/5 text-muted-foreground tabular-nums hover:bg-foreground/10 aria-pressed:bg-[#e040fb]/10 aria-pressed:font-semibold aria-pressed:text-[#c026d3]"
+            // pb-px: 글자 줄이 0.5px 위치에 놓여 반올림으로 1px 처지던 것을 정수 위치로 올린다
+            className="h-8 rounded-full bg-foreground/5 pb-px text-muted-foreground tabular-nums hover:bg-foreground/10 aria-pressed:bg-[#e040fb]/10 aria-pressed:font-semibold aria-pressed:text-[#c026d3]"
           >
             {m}분
           </Button>

@@ -50,13 +50,16 @@ export function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
       data-reorder=""
       style={style}
       className={cn(
-        "group relative flex min-h-9 items-center gap-2 rounded-md pr-1 pl-2 hover:bg-muted/70",
+        // 위쪽 정렬: 줄바꿈돼도 체크박스·버튼이 첫 줄에 맞는다. 줄 높이 20px + 위아래 8px = 한 줄 36px.
+        // 첫 줄(20px)과 높이가 다른 요소는 여백으로 첫 줄 가운데에 둔다
+        "group relative flex min-h-9 items-start gap-2 rounded-md py-2 pr-1 pl-2 hover:bg-muted/70",
         dragging
           ? "z-10 bg-card shadow-md"
           : "transition-transform duration-150",
       )}
     >
       <Checkbox
+        className="my-0.5"
         aria-label={`${todo.title} 완료`}
         checked={todo.done}
         onCheckedChange={(v) =>
@@ -81,7 +84,7 @@ export function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
               setEditing(false)
             }
           }}
-          className="h-7"
+          className="-my-1 h-7"
         />
       ) : (
         <span
@@ -91,7 +94,7 @@ export function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
             (e.key === "Enter" || e.key === "F2") && startEdit()
           }
           className={cn(
-            "flex-1 text-sm break-all",
+            "flex-1 text-sm leading-5 break-all",
             todo.done && "text-muted-foreground line-through opacity-60",
           )}
         >
@@ -102,7 +105,7 @@ export function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
         aria-hidden
         onPointerDown={onGrab}
         className={cn(
-          "flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground/60 opacity-0 group-hover:opacity-100 active:cursor-grabbing",
+          "-my-0.5 flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground/60 opacity-0 group-hover:opacity-100 active:cursor-grabbing",
           dragging && "opacity-100",
         )}
       >
@@ -113,7 +116,7 @@ export function TodoRow({ todo, onGrab, dragging, style }: RowProps) {
         size="icon-xs"
         aria-label="삭제"
         title="삭제"
-        className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
+        className="-my-0.5 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
         onClick={() => del.mutate(todo.id, { onError: toastError })}
       >
         <IconX />
