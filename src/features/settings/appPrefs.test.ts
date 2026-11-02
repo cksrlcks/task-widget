@@ -6,7 +6,7 @@ describe("loadPrefs", () => {
     expect(
       loadPrefs('{"sectionOrder":["calendar","x","calendar","todos"]}')
         .sectionOrder,
-    ).toEqual(["calendar", "todos", "pomodoro"])
+    ).toEqual(["calendar", "todos", "pomodoro", "clipboard"])
   })
 
   test("section heights: keeps known numeric keys, clamps, drops junk", () => {
@@ -27,10 +27,11 @@ describe("loadPrefs", () => {
       showPomodoro: true,
       showTodos: true,
       showCalendar: true,
+      showClipboard: true,
       focusMin: 25,
       sound: true,
       sectionHeights: {},
-      sectionOrder: ["pomodoro", "todos", "calendar"],
+      sectionOrder: ["pomodoro", "todos", "calendar", "clipboard"],
       calendarExpanded: false,
     })
   })

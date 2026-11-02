@@ -1,5 +1,6 @@
 import { IconGripVertical } from "@tabler/icons-react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { isTauri } from "@/features/shell/platform"
 import { useDragReorder } from "@/hooks/use-drag-reorder"
 import { cn } from "@/lib/utils"
 import { setPrefs, useAppPrefs, type SectionId } from "../appPrefs"
@@ -7,17 +8,24 @@ import { Section } from "../ui/Section"
 
 const ITEMS: Record<
   SectionId,
-  { key: "showPomodoro" | "showTodos" | "showCalendar"; title: string }
+  {
+    key: "showPomodoro" | "showTodos" | "showCalendar" | "showClipboard"
+    title: string
+  }
 > = {
   pomodoro: { key: "showPomodoro", title: "뽀모도로" },
   todos: { key: "showTodos", title: "할 일" },
   calendar: { key: "showCalendar", title: "캘린더" },
+  clipboard: { key: "showClipboard", title: "클립보드" },
 }
 
 /** 표시할 섹션과 순서. 손잡이를 끌어 위젯에 쌓이는 순서를 바꾼다 */
 export function SectionsPage() {
   const prefs = useAppPrefs()
-  const order = prefs.sectionOrder
+  // 클립보드는 데스크톱 앱에만 있다. 숨긴 항목은 저장할 때 맨 뒤에 다시 붙는다
+  const order = prefs.sectionOrder.filter(
+    (id) => id !== "clipboard" || isTauri(),
+  )
   const { listRef, grab, shift, dragging } = useDragReorder<HTMLUListElement>(
     (from, to) => {
       const next = [...order]

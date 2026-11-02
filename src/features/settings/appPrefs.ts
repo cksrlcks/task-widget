@@ -3,7 +3,7 @@ import { isTauri } from "@/features/shell/platform"
 import type { Anchor } from "@/features/widget/windowPos"
 
 export type Theme = "system" | "light" | "dark"
-export type SectionId = "pomodoro" | "todos" | "calendar"
+export type SectionId = "pomodoro" | "todos" | "calendar" | "clipboard"
 
 export type AppPrefs = {
   theme: Theme
@@ -17,6 +17,8 @@ export type AppPrefs = {
   showPomodoro: boolean
   showTodos: boolean
   showCalendar: boolean
+  /** 클립보드 기록(데스크톱만). 끄면 기록도 멈춘다 */
+  showClipboard: boolean
   /** 타이머 기본 시간(분) */
   focusMin: number
   sound: boolean
@@ -38,10 +40,11 @@ export const DEFAULTS: AppPrefs = {
   showPomodoro: true,
   showTodos: true,
   showCalendar: true,
+  showClipboard: true,
   focusMin: 25,
   sound: true,
   sectionHeights: {},
-  sectionOrder: ["pomodoro", "todos", "calendar"],
+  sectionOrder: ["pomodoro", "todos", "calendar", "clipboard"],
   calendarExpanded: false,
 }
 const THEMES: Theme[] = ["system", "light", "dark"]
@@ -55,7 +58,7 @@ const num = (v: unknown, min: number, max: number, def: number) =>
 const oneOf = <T>(v: unknown, opts: T[], def: T) =>
   opts.includes(v as T) ? (v as T) : def
 const bool = (v: unknown, def: boolean) => (typeof v === "boolean" ? v : def)
-const SECTIONS: SectionId[] = ["pomodoro", "todos", "calendar"]
+const SECTIONS: SectionId[] = ["pomodoro", "todos", "calendar", "clipboard"]
 // 아는 이름만 한 번씩, 빠진 섹션은 기본 순서대로 뒤에 붙인다
 const order = (v: unknown): SectionId[] => {
   const known = Array.isArray(v)
@@ -94,6 +97,7 @@ export function loadPrefs(raw: string | null): AppPrefs {
     showPomodoro: bool(s.showPomodoro, d.showPomodoro),
     showTodos: bool(s.showTodos, d.showTodos),
     showCalendar: bool(s.showCalendar, d.showCalendar),
+    showClipboard: bool(s.showClipboard, d.showClipboard),
     focusMin: num(s.focusMin, 1, 120, d.focusMin),
     sound: bool(s.sound, d.sound),
     sectionHeights: heights(s.sectionHeights),

@@ -26,6 +26,13 @@ serde_json = "1"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
 
+# 클립보드 섹션: Windows는 시스템 기록(Win+V) API, 그 밖은 텍스트를 직접 읽는다
+[target."cfg(windows)".dependencies]
+windows = { version = "0.62", features = ["ApplicationModel_DataTransfer", "Foundation", "Foundation_Collections", "Win32_System_Com", "Win32_System_DataExchange", "Graphics_Imaging", "Storage_Streams", "Security_Cryptography"] }
+
+[target."cfg(not(windows))".dependencies]
+arboard = { version = "3.7.0", default-features = false }
+
 [profile.release]
 lto = "thin"
 opt-level = 3

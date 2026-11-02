@@ -1,3 +1,5 @@
+mod clipboard;
+
 use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
@@ -93,6 +95,7 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+            clipboard::watch(app.handle().clone());
             Ok(())
         })
         // 위젯 창 닫기(Alt+F4): 트레이 설정이면 숨기고 아니면 종료
@@ -109,7 +112,17 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![apply_window_prefs])
+        .invoke_handler(tauri::generate_handler![
+            apply_window_prefs,
+            #[cfg(windows)]
+            clipboard::clipboard_history,
+            #[cfg(windows)]
+            clipboard::clipboard_history_use,
+            #[cfg(windows)]
+            clipboard::clipboard_history_delete,
+            #[cfg(windows)]
+            clipboard::clipboard_history_clear,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

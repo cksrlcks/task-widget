@@ -9,6 +9,7 @@ import {
 import { Toaster } from "sonner"
 import { isSessionLost } from "@/features/auth/authExpiry"
 import { startAuthSession } from "@/features/auth/useAuth"
+import { initClipboard } from "@/features/clipboard/clipboardStore"
 import { getPrefs, initPrefs, setPrefs } from "@/features/settings/appPrefs"
 import { isTauri } from "@/features/shell/platform"
 import { initWindow } from "@/features/widget/windowPos"
@@ -53,6 +54,7 @@ async function start() {
       (anchor) => setPrefs({ anchor }),
     ).catch(console.error)
     initPrefs()
+    initClipboard()
   }
   if (failure) throw failure
 
